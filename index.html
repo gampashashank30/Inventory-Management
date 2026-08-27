@@ -3468,55 +3468,141 @@
         const supplierFilter = document.getElementById('component-supplier-filter')?.value || 'All';
         const searchInput = (document.getElementById('component-search')?.value || '').toLowerCase().trim();
 
-        // Build unique supplier list for dropdown
+        // Pagination state
+        if (!state.compPage) state.compPage = 1;
+        const PAGE_SIZE = 25;
+
+        // Unique supplier list
         const uniqueSuppliers = [...new Set(state.components.map(c => c.supplier || '').filter(Boolean))].sort();
 
+        // Filter
         let filtered = state.components.filter(c => {
           const name = (c.name || '').toLowerCase();
           const sku = (c.sku || '').toLowerCase();
-          const supplier = (c.supplier || '').toLowerCase();
+          const sup = (c.supplier || '').toLowerCase();
           const notes = (c.notes || '').toLowerCase();
-          const category = c.category || 'Other';
-          const whId = c.warehouseId || '';
-
-          const matchesSearch = !searchInput || name.includes(searchInput) || sku.includes(searchInput) || supplier.includes(searchInput) || notes.includes(searchInput);
-          const matchesCategory = categoryFilter === 'All' || category.toLowerCase() === categoryFilter.toLowerCase();
-          const matchesWh = whFilter === 'All' || whId === whFilter;
-          const matchesSupplier = supplierFilter === 'All' || supplier === supplierFilter.toLowerCase();
-          const matchesLowStock = !state.filterLowStockOnly || (Number(c.spareQty || 0) <= Number(c.minThreshold !== undefined ? c.minThreshold : 5));
-          
-          return matchesSearch && matchesCategory && matchesWh && matchesSupplier && matchesLowStock;
+          const cat = c.category || 'Other';
+          const wh = c.warehouseId || '';
+          const mSearch = !searchInput || name.includes(searchInput) || sku.includes(searchInput) || sup.includes(searchInput) || notes.includes(searchInput);
+          const mCat = categoryFilter === 'All' || cat.toLowerCase() === categoryFilter.toLowerCase();
+          const mWh = whFilter === 'All' || wh === whFilter;
+          const mSup = supplierFilter === 'All' || sup === supplierFilter.toLowerCase();
+          const mLow = !state.filterLowStockOnly || (Number(c.spareQty || 0) <= Number(c.minThreshold !== undefined ? c.minThreshold : 5));
+          return mSearch && mCat && mWh && mSup && mLow;
         });
 
-        // Apply column sorting
+        // Sort
         const sf = state.sortField || 'name';
         const sd = state.sortDir || 'asc';
         filtered.sort((a, b) => {
           let av, bv;
-          if (sf === 'name') { av = (a.name || '').toLowerCase(); bv = (b.name || '').toLowerCase(); }
-          else if (sf === 'category') { av = (a.category || '').toLowerCase(); bv = (b.category || '').toLowerCase(); }
-          else if (sf === 'spare') { av = a.spareQty || 0; bv = b.spareQty || 0; }
-          else if (sf === 'inuse') { av = a.inUseQty || 0; bv = b.inUseQty || 0; }
-          else if (sf === 'total') { av = a.totalQty || 0; bv = b.totalQty || 0; }
-          else if (sf === 'price') { av = a.price || 0; bv = b.price || 0; }
-          else { av = (a.name || '').toLowerCase(); bv = (b.name || '').toLowerCase(); }
+          if (sf === 'name')     { av = (a.name||'').toLowerCase();     bv = (b.name||'').toLowerCase(); }
+          else if (sf === 'category') { av = (a.category||'').toLowerCase(); bv = (b.category||'').toLowerCase(); }
+          else if (sf === 'spare')  { av = a.spareQty||0;  bv = b.spareQty||0; }
+          else if (sf === 'inuse')  { av = a.inUseQty||0;  bv = b.inUseQty||0; }
+          else if (sf === 'total')  { av = a.totalQty||0;  bv = b.totalQty||0; }
+          else if (sf === 'price')  { av = a.price||0;     bv = b.price||0; }
+          else { av = (a.name||'').toLowerCase(); bv = (b.name||'').toLowerCase(); }
           if (av < bv) return sd === 'asc' ? -1 : 1;
-          if (av > bv) return sd === 'asc' ? 1 : -1;
+          if (av > bv) return sd === 'asc' ?  1 : -1;
           return 0;
         });
 
-        // Sort icon helper (safe - no special chars injected into HTML attributes)
+        // Paginate
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (state.compPage > totalPages) state.compPage = totalPages;
+        const pageStart = (state.compPage - 1) * PAGE_SIZE;
+        const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+        // Sort icon helper (safe — no special chars in HTML attrs)
         function sortIcon(field) {
           if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">⇅</span>';
           return state.sortDir === 'asc'
             ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▲</span>'
             : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▼</span>';
         }
-        // Safe sort th: uses data-sort attribute handled by delegated listener
         function sortTh(field, label) {
           const active = state.sortField === field;
-          const border = active ? 'border-bottom:2px solid var(--color-accent-purple);' : '';
-          return `<th style="cursor:pointer;user-select:none;${border}" data-sort="${field}">${label} ${sortIcon(field)}</th>`;
+          const bb = active ? 'border-bottom:2px solid var(--color-accent-purple);' : '';
+          return `<th style="cursor:pointer;user-select:none;${bb}" data-sort="${field}">${label} ${sortIcon(field)}</th>`;
+        }
+
+        // Row HTML builder — runs outside template literal for safety
+        function buildRows(items) {
+          if (!items.length) {
+            return `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--color-text-muted);">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                <div>No components match the current search or filters.</div>
+                <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
+              </div></td></tr>`;
+          }
+          return items.map(comp => {
+            const catColor = getCategoryColor(comp.category);
+            const health = getStockHealthBadge(comp);
+            const whName = getWarehouseName(comp.warehouseId);
+            const price = (comp.price || 0).toFixed(2);
+            const spareQty = comp.spareQty !== undefined ? comp.spareQty : 0;
+            const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
+            const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
+            return `<tr>
+              <td>
+                <div style="font-weight:600;font-size:14px;">${comp.name || 'Unnamed'}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+                  <span class="sku-pill">${comp.sku || '—'}</span>
+                  <span style="font-size:11px;color:var(--color-text-muted);">${comp.supplier || 'N/A'}</span>
+                </div>
+              </td>
+              <td><span class="cat-badge" style="background:rgba(100,100,100,0.08);color:${catColor};border:1px solid rgba(100,100,100,0.15);">${comp.category || 'Other'}</span></td>
+              <td><span style="font-size:12.5px;color:var(--color-text-muted);">${whName}</span></td>
+              <td>${health}</td>
+              <td><strong style="color:var(--color-accent-teal);">${spareQty}</strong></td>
+              <td><strong style="color:var(--color-accent-amber);">${inUseQty}</strong></td>
+              <td><strong>${totalQty} ${comp.unit || 'pcs'}</strong></td>
+              <td>₹${price}</td>
+              <td>
+                <div class="qty-assign-container">
+                  <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
+                  <button class="btn-action-sm rose" onclick="openStockOutFor('${comp.id}')" title="Quick Stock Out">- Out</button>
+                </div>
+              </td>
+              <td>
+                <div class="action-icons-row">
+                  <button class="action-icon-btn edit" onclick="openEditComponent('${comp.id}')" title="Edit">
+                    <i data-lucide="pencil" style="width:15px;height:15px;"></i>
+                  </button>
+                  <button class="action-icon-btn delete" onclick="deleteComponent('${comp.id}')" title="Delete">
+                    <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>`;
+          }).join('');
+        }
+
+        // Pagination buttons
+        function buildPagination() {
+          if (totalPages <= 1) return '';
+          const prevDis = state.compPage <= 1 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
+          const nextDis = state.compPage >= totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
+          let pages = '';
+          const range = 2;
+          for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= state.compPage - range && i <= state.compPage + range)) {
+              pages += `<button class="btn btn-secondary" style="min-width:36px;padding:6px 10px;${i === state.compPage ? 'background:var(--color-accent-purple);color:#fff;border-color:var(--color-accent-purple);' : ''}" onclick="state.compPage=${i};render();">${i}</button>`;
+            } else if (i === state.compPage - range - 1 || i === state.compPage + range + 1) {
+              pages += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+            }
+          }
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:13px;color:var(--color-text-muted);">
+              Showing <strong>${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;render();">← Prev</button>
+              ${pages}
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;render();">Next →</button>
+            </div>
+          </div>`;
         }
 
         container.innerHTML = `
@@ -3546,30 +3632,25 @@
             <div class="search-filter-row">
               <div class="search-input-box">
                 <i data-lucide="search"></i>
-                <input type="text" id="component-search" placeholder="Search by name, SKU, vendor, details..." value="${searchInput}" oninput="render()">
+                <input type="text" id="component-search" placeholder="Search by name, SKU, vendor, details..." value="${searchInput}" oninput="state.compPage=1;render()">
               </div>
-              
-              <select id="component-cat-filter" class="filter-select" onchange="render()">
+              <select id="component-cat-filter" class="filter-select" onchange="state.compPage=1;render()">
                 <option value="All">All Categories</option>
                 ${state.categories.map(c => `<option value="${c.name}" ${categoryFilter === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
               </select>
-
-              <select id="component-wh-filter" class="filter-select" onchange="render()">
+              <select id="component-wh-filter" class="filter-select" onchange="state.compPage=1;render()">
                 <option value="All">All Warehouses</option>
                 ${state.warehouses.map(w => `<option value="${w.id}" ${whFilter === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
               </select>
-
-              <select id="component-supplier-filter" class="filter-select" onchange="render()">
+              <select id="component-supplier-filter" class="filter-select" onchange="state.compPage=1;render()">
                 <option value="All">All Suppliers</option>
                 ${uniqueSuppliers.map(s => `<option value="${s}" ${supplierFilter === s ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
-
-              <button class="btn btn-secondary ${state.filterLowStockOnly ? 'btn-warning' : ''}" onclick="state.filterLowStockOnly = !state.filterLowStockOnly; render();" style="white-space:nowrap;">
+              <button class="btn btn-secondary ${state.filterLowStockOnly ? 'btn-warning' : ''}" onclick="state.filterLowStockOnly=!state.filterLowStockOnly;state.compPage=1;render();" style="white-space:nowrap;">
                 <i data-lucide="alert-triangle" style="width:14px;"></i> ${state.filterLowStockOnly ? 'Showing Low Stock' : 'Filter Low Stock'}
               </button>
-
               ${(searchInput || categoryFilter !== 'All' || whFilter !== 'All' || supplierFilter !== 'All' || state.filterLowStockOnly) ? `
-                <button class="btn btn-secondary" onclick="resetComponentFilters()" title="Reset search & filters">
+                <button class="btn btn-secondary" onclick="resetComponentFilters()" title="Reset all filters">
                   <i data-lucide="x" style="width:14px;"></i> Clear Filters
                 </button>
               ` : ''}
@@ -3593,60 +3674,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${filtered.map(comp => `
-                    <tr>
-                      <td>
-                        <div style="font-weight: 600; font-size:14.5px;">${comp.name}</div>
-                        <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
-                          <span class="sku-pill">${comp.sku}</span>
-                          <span style="font-size:11px; color:var(--color-text-muted);">${comp.supplier || 'N/A'}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span class="cat-badge" style="background-color:${getCategoryColor(comp.category)}15; color:${getCategoryColor(comp.category)}; border:1px solid ${getCategoryColor(comp.category)}30;">
-                          ${comp.category}
-                        </span>
-                      </td>
-                      <td><span style="font-size:12.5px; color:var(--color-text-muted);">${getWarehouseName(comp.warehouseId)}</span></td>
-                      <td>${getStockHealthBadge(comp)}</td>
-                      <td><strong style="color:var(--color-accent-teal);">${comp.spareQty}</strong></td>
-                      <td><strong style="color:var(--color-accent-amber);">${comp.inUseQty}</strong></td>
-                      <td><strong>${comp.totalQty} ${comp.unit}</strong></td>
-                      <td>₹${(comp.price || 0).toFixed(2)}</td>
-                      <td>
-                        <div class="qty-assign-container">
-                          <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
-                          <button class="btn-action-sm rose" onclick="openStockOutFor('${comp.id}')" title="Quick Stock Out">- Out</button>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="action-icons-row">
-                          <button class="action-icon-btn edit" onclick="openEditComponent('${comp.id}')" title="Edit Component">
-                            <i data-lucide="pencil" style="width:15px; height:15px;"></i>
-                          </button>
-                          <button class="action-icon-btn delete" onclick="deleteComponent('${comp.id}')" title="Delete Component">
-                            <i data-lucide="trash-2" style="width:15px; height:15px;"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
-                  ${filtered.length === 0 ? `
-                    <tr>
-                      <td colspan="10" style="text-align: center; padding: 40px; color: var(--color-text-muted);">
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
-                          <div>No components match the current search or filters.</div>
-                          <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ` : ''}
+                  ${buildRows(paginated)}
                 </tbody>
               </table>
             </div>
+            ${buildPagination()}
           </div>
         `;
       }
+
 
       // 3. PROJECTS VIEW
       else if (state.currentView === 'projects') {
