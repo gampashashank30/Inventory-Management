@@ -1,0 +1,29 @@
+{
+  "name": "inventory-management",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx -y serve . -p 3000 -s",
+    "start": "npx -y serve . -p 3000 -s",
+    "test": "npx playwright test tests/e2e_full_suite.spec.js",
+    "test:ui": "npx playwright test --ui",
+    "test:report": "npx playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gampashashank30/Inventory-Management.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gampashashank30/Inventory-Management/issues"
+  },
+  "homepage": "https://github.com/gampashashank30/Inventory-Management#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "playwright": "^1.62.1"
+  }
+}
