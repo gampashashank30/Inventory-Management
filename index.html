@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Inven3 — Enterprise IoT Project & Inventory Management ERP</title>
   
   <!-- Premium Google Fonts -->
@@ -687,6 +690,43 @@
       margin-top: 1px;
     }
 
+    /* Low Stock Collapsible Dropdown */
+    .low-stock-dropdown {
+      background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+      border: 1.5px solid #fecdd3;
+      border-radius: var(--border-radius-card);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(225, 29, 72, 0.08);
+    }
+
+    .low-stock-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: background 0.15s;
+    }
+
+    .low-stock-header:hover {
+      background: rgba(254, 205, 211, 0.3);
+    }
+
+    .low-stock-body {
+      border-top: 1.5px solid #fecdd3;
+      background: white;
+      animation: slideDown 0.2s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     /* Project Cards Grid */
     .projects-grid {
       display: grid;
@@ -1259,6 +1299,78 @@
       flex-direction: column;
       gap: 8px;
     }
+
+    /* ── Real-Time Sync Status UI ────────────────────────────────────── */
+    .sync-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #f0fdf4;
+      color: #059669;
+      border: 1px solid #d1fae5;
+      transition: background 0.35s, color 0.35s, border-color 0.35s;
+      cursor: default;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .sync-status-pill.offline {
+      background: #fff1f2;
+      color: #e11d48;
+      border-color: #fecdd3;
+    }
+    .sync-status-pill.syncing {
+      background: #eff6ff;
+      color: #2563eb;
+      border-color: #bfdbfe;
+    }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #059669;
+      flex-shrink: 0;
+      transition: background 0.35s;
+    }
+    .sync-dot.live    { animation: syncPulse 2.4s ease-in-out infinite; }
+    .sync-dot.offline { background: #e11d48; animation: none; }
+    .sync-dot.syncing { background: #2563eb; animation: syncPulse 0.75s ease-in-out infinite; }
+    @keyframes syncPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.65); }
+    }
+    .online-users-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #f5f3ff;
+      color: #7c3aed;
+      border: 1px solid #ede9fe;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .online-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7c3aed;
+      animation: syncPulse 1.8s ease-in-out infinite;
+    }
+    .remote-update-flash {
+      animation: remoteFlash 0.9s ease-out;
+    }
+    @keyframes remoteFlash {
+      0%   { outline: 2px solid rgba(13,148,136,0); }
+      30%  { outline: 2px solid rgba(13,148,136,0.35); }
+      100% { outline: 2px solid rgba(13,148,136,0); }
+    }
   </style>
 </head>
 <body>
@@ -1334,6 +1446,16 @@
       </div>
 
       <div class="top-right">
+        <!-- ── Real-Time Sync Status Pill ── -->
+        <div class="sync-status-pill" id="sync-status-pill" title="Firebase real-time sync status">
+          <div class="sync-dot syncing" id="sync-dot"></div>
+          <span id="sync-status-text">Connecting...</span>
+        </div>
+        <!-- ── Online Devices Badge ── -->
+        <div class="online-users-badge" id="online-users-badge" style="display:none;" title="Active sessions across all devices">
+          <div class="online-dot"></div>
+          <span id="online-users-count">1 online</span>
+        </div>
         <button class="icon-button" id="btn-low-stock-bell" onclick="filterLowStockView()" title="Low stock alerts">
           <i data-lucide="bell"></i>
           <span class="icon-badge" id="low-stock-badge-count">0</span>
@@ -1426,11 +1548,11 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="comp-cost">Purchase Cost ($)</label>
+            <label for="comp-cost">Purchase Cost (₹)</label>
             <input type="number" id="comp-cost" min="0" step="0.01" value="4.50">
           </div>
           <div class="form-group">
-            <label for="comp-price">Selling / Book Value ($)</label>
+            <label for="comp-price">Selling / Book Value (₹)</label>
             <input type="number" id="comp-price" min="0" step="0.01" value="8.00">
           </div>
         </div>
@@ -1668,7 +1790,9 @@
       currentView: 'dashboard',
       selectedProjectId: null,
       globalSearchQuery: '',
-      filterLowStockOnly: false
+      filterLowStockOnly: false,
+      sortField: 'name',
+      sortDir: 'asc'
     };
 
     // Default Rich Mock Dataset
@@ -1707,49 +1831,436 @@
       ]
     };
 
-    // Load & Migrate State
-    function init() {
-      const stored = localStorage.getItem('inven3_state');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          state.components = parsed.components || defaultData.components;
-          state.projects = parsed.projects || defaultData.projects;
-          state.stockHistory = parsed.stockHistory || defaultData.stockHistory;
-          state.warehouses = parsed.warehouses && parsed.warehouses.length ? parsed.warehouses : defaultData.warehouses;
-          state.categories = parsed.categories && parsed.categories.length ? parsed.categories : defaultData.categories;
+    // ── FIREBASE REAL-TIME CONFIG ─────────────────────────────────
+    // NOTE: For production, move these to firebase-config.js and add to .gitignore
+    const FIREBASE_DB_URL = "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app";
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyCG5xzCaSJAvmWWFhVD2QYnP8SfyI-TVZM",
+      authDomain:        "ggmaad-inventory-management.firebaseapp.com",
+      databaseURL:       FIREBASE_DB_URL,
+      projectId:         "ggmaad-inventory-management",
+      storageBucket:     "ggmaad-inventory-management.firebasestorage.app",
+      messagingSenderId: "1087958945040",
+      appId:             "1:1087958945040:web:d8d5468aace354d2e22995"
+    };
 
-          // Migrate components schema if older version
-          state.components.forEach((c, idx) => {
-            if (!c.sku) c.sku = `SKU-${c.category.substring(0,3).toUpperCase()}-${String(idx+1).padStart(3,'0')}`;
-            if (c.price === undefined) c.price = 7.50;
-            if (c.cost === undefined) c.cost = 3.50;
-            if (c.minThreshold === undefined) c.minThreshold = 5;
-            if (!c.warehouseId) c.warehouseId = state.warehouses[0].id;
-          });
-        } catch (e) {
-          state = { ...state, ...defaultData };
+    let fbWriteDebounce    = null;
+    let fbDataLoaded       = false;  // true once Firebase sends us real data
+    let fbWriteBlocked     = true;   // blocks writes until Firebase data arrives
+    let lastLocalWriteTime = 0;      // ms timestamp of last local Firebase write — used to detect remote updates
+    let prevDataSnapshot   = null;   // JSON snapshot of last received Firebase data (excl. /presence)
+
+    // Category color map
+    const CATEGORY_COLORS = {
+      'Microcontrollers':   '#6d28d9',
+      'Communication':      '#0f766e',
+      'Sensors':            '#b91c1c',
+      'Resistors':          '#374151',
+      'Capacitors':         '#0369a1',
+      'Semiconductors':     '#7c3aed',
+      'Relays & Switches':  '#b45309',
+      'Connectors & Cables':'#0f766e',
+      'Power & Batteries':  '#d97706',
+      'LEDs & Displays':    '#c2410c',
+      'Motors & Actuators': '#059669',
+      'Tools & PCB':        '#6b7280',
+      'Misc Hardware':      '#374151',
+      'Other':              '#374151'
+    };
+
+    // Map Firebase raw Excel item → app component format
+    function mapFirebaseItem(fbKey, fbItem, idx, warehouseId) {
+      const rawTotal     = fbItem.totalQuantity;
+      const rawRemaining = fbItem.remainingStock;
+      const isNumericT   = typeof rawTotal === 'number';
+      const isNumericR   = typeof rawRemaining === 'number';
+      const isTextBased  = !isNumericT || !isNumericR;
+      const totalQty     = isNumericT ? rawTotal : 0;
+      const remaining    = isNumericR ? rawRemaining : (isNumericT ? totalQty : 1);
+      const inUse        = Math.max(0, totalQty - remaining);
+      const cat          = fbItem.category || 'Other';
+      const skuPrefix    = cat.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+      const minThreshold = isTextBased ? 0 : (remaining === 0 ? 1 : (remaining <= 1 ? 1 : 0));
+      return {
+        id:           'fb-' + fbKey,
+        sku:          `${skuPrefix}-${String(idx + 1).padStart(3, '0')}`,
+        name:         fbItem.name || 'Unknown',
+        category:     cat,
+        unit:         isTextBased ? (String(rawTotal || rawRemaining || 'pcs').replace(/[0-9]/g, '').trim() || 'pcs') : 'pcs',
+        totalQty:     isTextBased ? 1 : totalQty,
+        spareQty:     isTextBased ? 1 : Math.max(0, remaining),
+        inUseQty:     isTextBased ? 0 : inUse,
+        minThreshold: minThreshold,
+        cost: 0, price: 0,
+        supplier:     'MAAD Lab',
+        warehouseId:  warehouseId,
+        notes:        isTextBased ? `Stock: ${rawRemaining || rawTotal || 'In stock'}` : (remaining === 0 ? '⚠️ Out of stock' : '')
+      };
+    }
+
+    // Merge categories from Firebase items
+    function syncCategoriesFromFirebase(components) {
+      const seen = new Set(state.categories.map(c => c.name));
+      components.forEach(comp => {
+        if (!seen.has(comp.category)) {
+          seen.add(comp.category);
+          state.categories.push({ id: 'cat-fb-' + Date.now() + Math.random(), name: comp.category, color: CATEGORY_COLORS[comp.category] || '#374151' });
         }
+      });
+    }
+
+    // ── Real-Time Sync UI Helpers ──────────────────────────────────────────
+    function updateSyncStatus(status, text) {
+      const pill     = document.getElementById('sync-status-pill');
+      const dot      = document.getElementById('sync-dot');
+      const statusEl = document.getElementById('sync-status-text');
+      if (!pill) return;
+      pill.className = 'sync-status-pill' + (status !== 'live' ? ' ' + status : '');
+      if (dot)      dot.className      = 'sync-dot ' + status;
+      if (statusEl) statusEl.textContent = text;
+    }
+
+    function updateOnlineBadge(count) {
+      const badge   = document.getElementById('online-users-badge');
+      const countEl = document.getElementById('online-users-count');
+      if (!badge || !countEl) return;
+      if (count > 1) {
+        badge.style.display = 'flex';
+        countEl.textContent = count + ' online';
       } else {
-        state = { ...state, ...defaultData };
+        badge.style.display = 'none';
       }
-      saveState();
+    }
+
+    // Start Firebase real-time listener — the ONE source of truth
+    async function startFirebaseListener() {
+      try {
+        const { initializeApp, getApps }                               = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+        const { getDatabase, ref, onValue, set, onDisconnect, remove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+
+        // Prevent "app already exists" error on hot-reload
+        const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+        const db  = getDatabase(app);
+
+        window._fbRef = ref;
+        window._fbSet = set;
+        window._fbDb  = db;
+
+        // ── Presence System ────────────────────────────────────────────────
+        // Each browser session registers itself and removes on disconnect
+        const sessionId   = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        const presenceRef = ref(db, '/presence/' + sessionId);
+
+        // Monitor connection state & write presence heartbeat
+        onValue(ref(db, '/.info/connected'), (snap) => {
+          if (snap.val() === true) {
+            updateSyncStatus('live', '\uD83D\uDFE2 Live');
+            set(presenceRef, { online: true, since: Date.now() });
+            onDisconnect(presenceRef).remove();  // auto-clean on browser close
+          } else {
+            updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+          }
+        });
+
+        // Count active sessions → show "N online" badge
+        onValue(ref(db, '/presence'), (snap) => {
+          const data  = snap.val();
+          const count = data ? Object.values(data).filter(s => s && s.online).length : 0;
+          updateOnlineBadge(count);
+        });
+
+        // ── Main Data Listener ─────────────────────────────────────────────
+        onValue(ref(db, '/'), (snapshot) => {
+          // Remove loading bar
+          const bar = document.getElementById('fb-loading-bar');
+          if (bar) bar.remove();
+
+          const rootData = snapshot.val();
+          if (!rootData || typeof rootData !== 'object') {
+            // Firebase is empty — render UI with defaults and DO NOT overwrite
+            render();
+            return;
+          }
+
+          // Build a comparable snapshot of only business data (exclude /presence)
+          const currentDataSnap = JSON.stringify({
+            inventory:    rootData.inventory,
+            projects:     rootData.projects,
+            warehouses:   rootData.warehouses,
+            categories:   rootData.categories,
+            stockHistory: rootData.stockHistory
+          });
+
+          // Detect remote update: data changed AND we didn't just write locally
+          const isRemoteUpdate = window._fbFirstLoadDone
+            && prevDataSnapshot !== null
+            && currentDataSnap !== prevDataSnapshot
+            && (Date.now() - lastLocalWriteTime > 2000);
+
+          prevDataSnapshot = currentDataSnap;
+
+          // ── Apply Firebase data → state ──
+
+          // 1. Inventory / Components
+          if (rootData.inventory && typeof rootData.inventory === 'object') {
+            const whId = (rootData.warehouses && rootData.warehouses[0]?.id) || 'wh-1';
+            state.components = Object.entries(rootData.inventory).map(([key, item], idx) => {
+              if (item.id && item.sku) {
+                // Fully formatted component (previously saved from app)
+                return {
+                  id:           item.id,
+                  sku:          item.sku,
+                  name:         item.name         || 'Unnamed',
+                  category:     item.category      || 'Other',
+                  unit:         item.unit          || 'pcs',
+                  totalQty:     Number(item.totalQty   ?? item.totalQuantity   ?? 0),
+                  spareQty:     Number(item.spareQty   ?? item.remainingStock  ?? 0),
+                  inUseQty:     Number(item.inUseQty   ?? 0),
+                  minThreshold: item.minThreshold  !== undefined ? item.minThreshold : 5,
+                  cost:         Number(item.cost   || 0),
+                  price:        Number(item.price  || 0),
+                  supplier:     item.supplier      || 'MAAD Lab',
+                  warehouseId:  item.warehouseId   || whId,
+                  notes:        item.notes         || ''
+                };
+              }
+              // Raw Excel import format
+              return mapFirebaseItem(key, item, idx, whId);
+            });
+          }
+
+          // 2. Projects
+          if (rootData.projects) {
+            const rawProjects = Array.isArray(rootData.projects)
+              ? rootData.projects
+              : Object.values(rootData.projects).filter(Boolean);
+            // Normalize: every project MUST have usedComponents array
+            state.projects = rawProjects.map(p => ({
+              id:             p.id || ('proj-' + Date.now() + Math.random()),
+              name:           p.name           || 'Untitled Project',
+              description:    p.description    || '',
+              status:         p.status         || 'Active',
+              createdDate:    p.createdDate    || new Date().toISOString().split('T')[0],
+              usedComponents: Array.isArray(p.usedComponents) ? p.usedComponents : []
+            }));
+          }
+
+          // 3. Warehouses
+          if (rootData.warehouses) {
+            state.warehouses = Array.isArray(rootData.warehouses)
+              ? rootData.warehouses
+              : Object.values(rootData.warehouses).filter(Boolean);
+          }
+
+          // 4. Categories
+          if (rootData.categories) {
+            state.categories = Array.isArray(rootData.categories)
+              ? rootData.categories
+              : Object.values(rootData.categories).filter(Boolean);
+          } else {
+            syncCategoriesFromFirebase(state.components);
+          }
+
+          // 5. Stock History
+          if (rootData.stockHistory) {
+            state.stockHistory = Array.isArray(rootData.stockHistory)
+              ? rootData.stockHistory
+              : Object.values(rootData.stockHistory).filter(Boolean);
+          }
+
+          // Cache to localStorage for fast next load
+          localStorage.setItem('inven3_state', JSON.stringify({
+            components: state.components, projects: state.projects,
+            warehouses: state.warehouses, categories: state.categories,
+            stockHistory: state.stockHistory
+          }));
+
+          fbDataLoaded   = true;
+          fbWriteBlocked = false;  // Now safe to write back
+
+          const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          updateSyncStatus('live', '\uD83D\uDFE2 Live \u00B7 ' + syncTime);
+          updateLowStockBadge();
+          populateDynamicDropdowns();
+          lucide.createIcons();
+          render();
+
+          if (!window._fbFirstLoadDone) {
+            window._fbFirstLoadDone = true;
+            triggerToast('\u26A1 Firebase connected: ' + state.components.length + ' components live');
+          } else if (isRemoteUpdate) {
+            // Another device pushed an update — notify and visually flash
+            triggerToast('\uD83D\uDD04 Remote update \u2014 data refreshed from another device');
+            const vc = document.getElementById('view-content');
+            if (vc) {
+              vc.classList.add('remote-update-flash');
+              setTimeout(() => vc.classList.remove('remote-update-flash'), 900);
+            }
+          }
+        }, (error) => {
+          const bar = document.getElementById('fb-loading-bar');
+          if (bar) bar.remove();
+          updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+          console.error('Firebase error:', error);
+          triggerToast('\u26A0\uFE0F Firebase: ' + error.message, true);
+          render(); // Always render something
+        });
+
+      } catch (err) {
+        console.error('Firebase load error:', err);
+        updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+        loadFromLocalStorageFallback();
+      }
+    }
+
+    // Write state to Firebase — only after Firebase has given us its data first
+    // Uses path-specific writes so /presence node is never overwritten
+    async function syncFullStateToFirebase(immediate = false) {
+      if (fbWriteBlocked) {
+        console.log('Write blocked \u2014 waiting for Firebase data first');
+        return;
+      }
+      clearTimeout(fbWriteDebounce);
+      fbWriteDebounce = setTimeout(async () => {
+        try {
+          updateSyncStatus('syncing', '\uD83D\uDD04 Syncing...');
+          lastLocalWriteTime = Date.now();  // Mark as a local write so onValue doesn't treat the echo as a remote update
+
+          const ref = window._fbRef;
+          const set = window._fbSet;
+          const db  = window._fbDb;
+          if (!ref || !set || !db) return;
+
+          const inventoryMap = {};
+          state.components.forEach((c, idx) => {
+            const safeKey = (c.id || ('comp_' + (idx+1))).replace(/[^a-zA-Z0-9_-]/g, '_');
+            inventoryMap[safeKey] = {
+              id: c.id || safeKey, sku: c.sku, name: c.name, category: c.category,
+              unit: c.unit,
+              totalQty: Number(c.totalQty || 0), totalQuantity: Number(c.totalQty || 0),
+              spareQty: Number(c.spareQty || 0), remainingStock: Number(c.spareQty || 0),
+              inUseQty: Number(c.inUseQty || 0),
+              minThreshold: c.minThreshold !== undefined ? c.minThreshold : 5,
+              cost: c.cost || 0, price: c.price || 0,
+              supplier: c.supplier || 'MAAD Lab',
+              warehouseId: c.warehouseId || 'wh-1',
+              notes: c.notes || ''
+            };
+          });
+
+          // Write to specific paths — avoids overwriting the /presence node
+          await Promise.all([
+            set(ref(db, '/inventory'),    inventoryMap),
+            set(ref(db, '/projects'),     state.projects     || []),
+            set(ref(db, '/warehouses'),   state.warehouses   || []),
+            set(ref(db, '/categories'),   state.categories   || []),
+            set(ref(db, '/stockHistory'), state.stockHistory || [])
+          ]);
+
+          const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          updateSyncStatus('live', '\uD83D\uDFE2 Live \u00B7 ' + syncTime);
+          console.log('\u26A1 Firebase synced at ' + syncTime);
+        } catch (err) {
+          updateSyncStatus('offline', '\uD83D\uDD34 Offline \u2014 retry pending');
+          console.warn('Firebase write failed:', err);
+        }
+      }, immediate ? 80 : 250);
+    }
+
+    // Offline fallback
+    function loadFromLocalStorageFallback() {
+      const bar = document.getElementById('fb-loading-bar');
+      if (bar) bar.remove();
+      updateSyncStatus('offline', '\uD83D\uDD34 Offline \u2014 local mode');
+      const raw = localStorage.getItem('inven3_state');
+      if (raw) {
+        try {
+          const p = JSON.parse(raw);
+          state.components   = p.components   || defaultData.components;
+          state.projects     = p.projects     || defaultData.projects;
+          state.warehouses   = p.warehouses   || defaultData.warehouses;
+          state.categories   = p.categories   || defaultData.categories;
+          state.stockHistory = p.stockHistory || defaultData.stockHistory;
+        } catch { state.components = defaultData.components; }
+      } else {
+        state.components   = defaultData.components;
+        state.projects     = defaultData.projects;
+        state.warehouses   = defaultData.warehouses;
+        state.categories   = defaultData.categories;
+        state.stockHistory = defaultData.stockHistory;
+      }
+      triggerToast('⚠️ Offline mode \u2014 changes saved locally only', true);
       updateLowStockBadge();
       populateDynamicDropdowns();
       lucide.createIcons();
       render();
     }
 
-    // Save State to LocalStorage
+    // INIT \u2014 called on page load
+    function init() {
+      fbDataLoaded        = false;
+      fbWriteBlocked      = true;
+      window._fbFirstLoadDone = false;
+
+      // Load from localStorage for instant render (while Firebase connects)
+      const raw = localStorage.getItem('inven3_state');
+      if (raw) {
+        try {
+          const p = JSON.parse(raw);
+          state.projects     = p.projects     || defaultData.projects;
+          state.stockHistory = p.stockHistory || defaultData.stockHistory;
+          state.warehouses   = p.warehouses && p.warehouses.length ? p.warehouses : defaultData.warehouses;
+          state.categories   = p.categories && p.categories.length ? p.categories : defaultData.categories;
+          state.components   = p.components  || [];
+        } catch {
+          state.projects   = defaultData.projects;
+          state.warehouses = defaultData.warehouses;
+          state.categories = defaultData.categories;
+        }
+      } else {
+        state.projects   = defaultData.projects;
+        state.warehouses = defaultData.warehouses;
+        state.categories = defaultData.categories;
+      }
+
+      // Show loading bar
+      const mainEl = document.querySelector('main');
+      if (mainEl) {
+        mainEl.insertAdjacentHTML('afterbegin', `
+          <div id="fb-loading-bar" style="
+            position:fixed;top:0;left:0;right:0;z-index:9999;
+            height:3px;background:linear-gradient(90deg,#7c3aed,#0d9488,#7c3aed);
+            background-size:200%;animation:fbSlide 1.2s linear infinite;">
+          </div>
+          <style>@keyframes fbSlide{0%{background-position:0%}100%{background-position:200%}}</style>
+        `);
+      }
+
+      // ALWAYS render immediately \u2014 show dashboard with whatever data we have
+      updateLowStockBadge();
+      populateDynamicDropdowns();
+      lucide.createIcons();
+      render();
+
+      // Connect Firebase (will re-render with live data)
+      startFirebaseListener();
+    }
+
+    // Save State — saves to localStorage AND syncs to Firebase
+    // Only syncs to Firebase after data has been loaded FROM Firebase first
     function saveState() {
       localStorage.setItem('inven3_state', JSON.stringify({
-        components: state.components,
-        projects: state.projects,
-        warehouses: state.warehouses,
-        categories: state.categories,
+        components:   state.components,
+        projects:     state.projects,
+        warehouses:   state.warehouses,
+        categories:   state.categories,
         stockHistory: state.stockHistory
       }));
       updateLowStockBadge();
+      // Only push to Firebase after Firebase gave us data first (write-block safety)
+      if (!fbWriteBlocked) {
+        syncFullStateToFirebase();
+      }
     }
 
     // Update Low Stock Alert Badge
@@ -1897,6 +2408,16 @@
     function filterLowStockView() {
       state.filterLowStockOnly = !state.filterLowStockOnly;
       switchView('components');
+    }
+
+    // Toggle low stock dropdown panel
+    function toggleLowStockPanel() {
+      const body    = document.getElementById('low-stock-body');
+      const chevron = document.getElementById('low-stock-chevron');
+      if (!body) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display    = isOpen ? 'none' : 'block';
+      if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
     }
 
     // Handle Global Search Input
@@ -2052,7 +2573,7 @@
 
       if (confirm(`Are you sure you want to delete "${comp.name}"? This will unassign it from all active projects.`)) {
         state.projects.forEach(proj => {
-          proj.usedComponents = proj.usedComponents.filter(uc => uc.componentId !== compId);
+          proj.usedComponents = (proj.usedComponents || []).filter(uc => uc.componentId !== compId);
         });
 
         state.stockHistory.push({
@@ -2313,6 +2834,8 @@
       if (catFilter) catFilter.value = 'All';
       const whFilter = document.getElementById('component-wh-filter');
       if (whFilter) whFilter.value = 'All';
+      const supplierFilter = document.getElementById('component-supplier-filter');
+      if (supplierFilter) supplierFilter.value = 'All';
       const globalSearch = document.getElementById('global-search');
       if (globalSearch) globalSearch.value = '';
       render();
@@ -2489,7 +3012,7 @@
       projectComp.qty -= qty;
 
       if (projectComp.qty === 0) {
-        proj.usedComponents = proj.usedComponents.filter(uc => uc.componentId !== compId);
+        proj.usedComponents = (proj.usedComponents || []).filter(uc => uc.componentId !== compId);
       }
 
       state.stockHistory.push({
@@ -2602,9 +3125,38 @@
       }
     }
 
+    // Clean Playwright Test Data - removes all junk items injected by automated tests
+    function cleanTestData() {
+      const testPatterns = [
+        /^bench-/i, /^stress-sku-/i, /^top10-perf-/i, /^comp-\d{13}$/ 
+      ];
+      const testSKUPatterns = [
+        /^BENCH-/i, /^STRESS-/i, /^TOP10-/i, /^FEATHER-S3-/i, /^XSS-/i,
+        /^AUD-/i, /^INT-TEST/i
+      ];
+      const testNames = [
+        'zero stock sample item', 'negative test item', 'negative part test',
+        'duplicate sku item', 'invalid stock part', 'esp32-s3 feather pro',
+        'audit test sensor esp32-c3', 'top10 core node', 'top10 core persistence node',
+        'fast switching diode 1n4148', 'industrial component test sku',
+        'stress test diode', 'top10 persistence part'
+      ];
+      const before = state.components.length;
+      state.components = state.components.filter(c => {
+        const idMatch = testPatterns.some(r => r.test(c.id || ''));
+        const skuMatch = testSKUPatterns.some(r => r.test(c.sku || ''));
+        const nameMatch = testNames.some(n => (c.name || '').toLowerCase().includes(n));
+        return !idMatch && !skuMatch && !nameMatch;
+      });
+      const removed = before - state.components.length;
+      saveState();
+      render();
+      triggerToast(`Cleaned ${removed} test items from inventory.`);
+    }
+
     // 9. Export to CSV Engine
     function exportCatalogCSV() {
-      let csv = 'SKU,Component Name,Category,Spare Qty,In Use Qty,Total Qty,Unit,Cost ($),Price ($),Total Asset Value ($),Warehouse,Supplier\n';
+      let csv = 'SKU,Component Name,Category,Spare Qty,In Use Qty,Total Qty,Unit,Cost (₹),Price (₹),Total Asset Value (₹),Warehouse,Supplier\n';
       state.components.forEach(c => {
         const val = (c.totalQty * (c.price || 0)).toFixed(2);
         csv += `"${c.sku}","${c.name}","${c.category}",${c.spareQty},${c.inUseQty},${c.totalQty},"${c.unit}",${c.cost || 0},${c.price || 0},${val},"${getWarehouseName(c.warehouseId)}","${c.supplier || ''}"\n`;
@@ -2663,14 +3215,14 @@
       // 1. DASHBOARD VIEW
       if (state.currentView === 'dashboard') {
         const filteredProjects = state.projects.filter(p => 
-          p.name.toLowerCase().includes(state.globalSearchQuery) || 
-          p.description.toLowerCase().includes(state.globalSearchQuery)
+          (p.name || '').toLowerCase().includes(state.globalSearchQuery) || 
+          (p.description || '').toLowerCase().includes(state.globalSearchQuery)
         );
 
         const filteredComponents = state.components.filter(c => 
-          c.name.toLowerCase().includes(state.globalSearchQuery) ||
-          c.sku.toLowerCase().includes(state.globalSearchQuery) ||
-          c.supplier.toLowerCase().includes(state.globalSearchQuery)
+          (c.name || '').toLowerCase().includes(state.globalSearchQuery) ||
+          (c.sku || '').toLowerCase().includes(state.globalSearchQuery) ||
+          (c.supplier || '').toLowerCase().includes(state.globalSearchQuery)
         ).slice(0, 5);
 
         container.innerHTML = `
@@ -2692,21 +3244,46 @@
             </div>
           </div>
 
-          <!-- Low Stock Alert Banner if any items low -->
+          <!-- Low Stock Alert — Compact Collapsible Dropdown -->
           ${lowStockItems.length > 0 ? `
-            <div class="alert-banner">
-              <div class="alert-banner-left">
-                <div class="alert-icon-wrap">
-                  <i data-lucide="alert-triangle"></i>
+            <div class="low-stock-dropdown" id="low-stock-panel">
+              <button class="low-stock-header" onclick="toggleLowStockPanel()" id="low-stock-toggle-btn">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="background:#fef2f2;border:1.5px solid #fecdd3;border-radius:8px;padding:6px;display:flex;">
+                    <i data-lucide="alert-triangle" style="width:16px;height:16px;color:#e11d48;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight:700;font-size:13.5px;color:#9f1239;">Low Stock Alert</div>
+                    <div style="font-size:12px;color:#be123c;margin-top:1px;">${lowStockItems.length} items need restocking</div>
+                  </div>
                 </div>
-                <div>
-                  <div class="alert-title">Low Stock Alert: ${lowStockItems.length} items require attention</div>
-                  <div class="alert-desc">${lowStockItems.map(i => `${i.name} (${i.spareQty} left)`).join(', ')}</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="background:#fecdd3;color:#9f1239;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">${lowStockItems.length} items</span>
+                  <i data-lucide="chevron-down" id="low-stock-chevron" style="width:16px;height:16px;color:#9f1239;transition:transform 0.2s;"></i>
+                </div>
+              </button>
+              <div class="low-stock-body" id="low-stock-body" style="display:none;">
+                <div style="padding:12px 16px;border-bottom:1px solid #fecdd3;display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:12px;color:#be123c;font-weight:600;">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock &nbsp;•&nbsp; ${lowStockItems.filter(i=>i.spareQty>0).length} critically low</span>
+                  <button class="btn btn-secondary" style="border-color:#fecdd3;color:#9f1239;font-size:12px;padding:5px 12px;" onclick="filterLowStockView()">
+                    <i data-lucide="eye" style="width:13px;"></i> View All
+                  </button>
+                </div>
+                <div style="max-height:220px;overflow-y:auto;">
+                  ${lowStockItems.map(item => `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid #fff1f2;">
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:6px;height:6px;border-radius:50%;background:${item.spareQty===0?'#e11d48':'#f97316'};flex-shrink:0;"></div>
+                        <span style="font-size:13px;font-weight:500;color:#1e1138;">${item.name}</span>
+                        <span style="font-size:11px;color:#9f1239;background:#fef2f2;padding:2px 7px;border-radius:10px;">${item.category}</span>
+                      </div>
+                      <span style="font-size:12px;font-weight:700;color:${item.spareQty===0?'#e11d48':'#f97316'};min-width:60px;text-align:right;">
+                        ${item.spareQty === 0 ? '🔴 Out of stock' : item.spareQty + ' left'}
+                      </span>
+                    </div>
+                  `).join('')}
                 </div>
               </div>
-              <button class="btn btn-secondary" style="border-color:#fecdd3; color:#9f1239;" onclick="filterLowStockView()">
-                Inspect Low Stock
-              </button>
             </div>
           ` : ''}
 
@@ -2714,12 +3291,12 @@
           <div class="metrics-grid">
             <div class="metric-card">
               <div class="metric-icon-box purple">
-                <i data-lucide="dollar-sign"></i>
+                <i data-lucide="indian-rupee"></i>
               </div>
               <div class="metric-details">
                 <span class="metric-label">Asset Valuation</span>
-                <span class="metric-value">$${totalInventoryValuation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span class="metric-trend trend-up"><i data-lucide="trending-up" style="width:12px;"></i> Cost: $${totalInventoryCost.toFixed(0)}</span>
+                <span class="metric-value">₹${totalInventoryValuation.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span class="metric-trend trend-up"><i data-lucide="trending-up" style="width:12px;"></i> Cost: ₹${totalInventoryCost.toFixed(0)}</span>
               </div>
             </div>
 
@@ -2771,12 +3348,12 @@
               
               <div class="projects-grid">
                 ${filteredProjects.map(proj => {
-                  const itemsCount = proj.usedComponents.reduce((sum, item) => sum + item.qty, 0);
+                  const itemsCount = (proj.usedComponents || []).reduce((sum, item) => sum + (item.qty || 0), 0);
                   return `
                     <div class="project-card" onclick="switchView('project-detail', '${proj.id}')">
                       <div class="project-card-header">
-                        <h4 class="project-card-title">${proj.name}</h4>
-                        <span class="project-badge ${proj.status.toLowerCase()}">${proj.status}</span>
+                        <h4 class="project-card-title">${proj.name || 'Untitled Project'}</h4>
+                        <span class="project-badge ${(proj.status || 'active').toLowerCase()}">${proj.status || 'Active'}</span>
                       </div>
                       <p class="project-card-desc">${proj.description || 'No description provided.'}</p>
                       <div class="project-card-meta">
@@ -2786,7 +3363,7 @@
                         </div>
                         <div class="project-card-meta-item">
                           <i data-lucide="calendar" style="width: 14px;"></i>
-                          <span>${proj.createdDate}</span>
+                          <span>${proj.createdDate || ''}</span>
                         </div>
                       </div>
                     </div>
@@ -2829,6 +3406,46 @@
               </div>
             </div>
           </div>
+
+          <!-- Recent Stock Movements Feed -->
+          <div class="content-panel" style="margin-top:0;">
+            <div class="panel-header">
+              <h3 class="panel-title">Recent Stock Activity</h3>
+              <a href="#" class="btn-action-sm secondary" onclick="switchView('history')">View Full Ledger</a>
+            </div>
+            ${state.stockHistory.length === 0 ? `
+              <div style="text-align:center;padding:30px;color:var(--color-text-muted);font-size:13px;">No transactions recorded yet.</div>
+            ` : `
+              <div style="overflow:auto;">
+                <table>
+                  <thead><tr>
+                    <th style="width:90px;">Date</th>
+                    <th>Component</th>
+                    <th>Type</th>
+                    <th style="width:60px;">Qty</th>
+                    <th>Reference / Reason</th>
+                  </tr></thead>
+                  <tbody>
+                    ${[...state.stockHistory].reverse().slice(0,8).map(h => {
+                      const typeColor = h.action.includes('In') || h.action === 'Added' || h.action === 'Returned from Project' ? '#059669'
+                        : h.action.includes('Out') || h.action === 'Removed' ? '#e11d48'
+                        : h.action.includes('Assigned') ? '#7c3aed'
+                        : '#2563eb';
+                      const sign = h.action.includes('In') || h.action === 'Added' || h.action === 'Returned from Project' ? '+' :
+                        h.action.includes('Out') || h.action === 'Removed' ? '-' : '±';
+                      return `<tr>
+                        <td style="font-size:12px;color:var(--color-text-muted);">${h.date || ''}</td>
+                        <td><div style="font-weight:600;font-size:13px;">${h.componentName || ''}</div><span class="sku-pill" style="font-size:10px;">${h.sku || ''}</span></td>
+                        <td><span style="background:${typeColor}15;color:${typeColor};border:1px solid ${typeColor}30;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap;">${h.action}</span></td>
+                        <td style="font-weight:700;color:${typeColor};">${sign}${h.qty}</td>
+                        <td style="font-size:12px;color:var(--color-text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.reason || h.projectName || ''}</td>
+                      </tr>`;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
         `;
       }
 
@@ -2836,7 +3453,11 @@
       else if (state.currentView === 'components') {
         const categoryFilter = document.getElementById('component-cat-filter')?.value || 'All';
         const whFilter = document.getElementById('component-wh-filter')?.value || 'All';
+        const supplierFilter = document.getElementById('component-supplier-filter')?.value || 'All';
         const searchInput = (document.getElementById('component-search')?.value || '').toLowerCase().trim();
+
+        // Build unique supplier list for dropdown
+        const uniqueSuppliers = [...new Set(state.components.map(c => c.supplier || '').filter(Boolean))].sort();
 
         let filtered = state.components.filter(c => {
           const name = (c.name || '').toLowerCase();
@@ -2849,10 +3470,39 @@
           const matchesSearch = !searchInput || name.includes(searchInput) || sku.includes(searchInput) || supplier.includes(searchInput) || notes.includes(searchInput);
           const matchesCategory = categoryFilter === 'All' || category.toLowerCase() === categoryFilter.toLowerCase();
           const matchesWh = whFilter === 'All' || whId === whFilter;
+          const matchesSupplier = supplierFilter === 'All' || supplier === supplierFilter.toLowerCase();
           const matchesLowStock = !state.filterLowStockOnly || (Number(c.spareQty || 0) <= Number(c.minThreshold !== undefined ? c.minThreshold : 5));
           
-          return matchesSearch && matchesCategory && matchesWh && matchesLowStock;
+          return matchesSearch && matchesCategory && matchesWh && matchesSupplier && matchesLowStock;
         });
+
+        // Apply column sorting
+        const sf = state.sortField || 'name';
+        const sd = state.sortDir || 'asc';
+        filtered.sort((a, b) => {
+          let av, bv;
+          if (sf === 'name') { av = (a.name || '').toLowerCase(); bv = (b.name || '').toLowerCase(); }
+          else if (sf === 'category') { av = (a.category || '').toLowerCase(); bv = (b.category || '').toLowerCase(); }
+          else if (sf === 'spare') { av = a.spareQty || 0; bv = b.spareQty || 0; }
+          else if (sf === 'inuse') { av = a.inUseQty || 0; bv = b.inUseQty || 0; }
+          else if (sf === 'total') { av = a.totalQty || 0; bv = b.totalQty || 0; }
+          else if (sf === 'price') { av = a.price || 0; bv = b.price || 0; }
+          else { av = (a.name || '').toLowerCase(); bv = (b.name || '').toLowerCase(); }
+          if (av < bv) return sd === 'asc' ? -1 : 1;
+          if (av > bv) return sd === 'asc' ? 1 : -1;
+          return 0;
+        });
+
+        // Sort icon helper
+        function sortIcon(field) {
+          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;">⇅</span>';
+          return state.sortDir === 'asc'
+            ? '<span style="color:var(--color-accent-purple);margin-left:4px;">▲</span>'
+            : '<span style="color:var(--color-accent-purple);margin-left:4px;">▼</span>';
+        }
+        function sortClick(field) {
+          return `onclick="if(state.sortField==='${field}'){state.sortDir=state.sortDir==='asc'?'desc':'asc';}else{state.sortField='${field}';state.sortDir='asc';} render();"`;
+        }
 
         container.innerHTML = `
           <div class="view-header">
@@ -2894,11 +3544,16 @@
                 ${state.warehouses.map(w => `<option value="${w.id}" ${whFilter === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
               </select>
 
+              <select id="component-supplier-filter" class="filter-select" onchange="render()">
+                <option value="All">All Suppliers</option>
+                ${uniqueSuppliers.map(s => `<option value="${s}" ${supplierFilter === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+
               <button class="btn btn-secondary ${state.filterLowStockOnly ? 'btn-warning' : ''}" onclick="state.filterLowStockOnly = !state.filterLowStockOnly; render();" style="white-space:nowrap;">
                 <i data-lucide="alert-triangle" style="width:14px;"></i> ${state.filterLowStockOnly ? 'Showing Low Stock' : 'Filter Low Stock'}
               </button>
 
-              ${(searchInput || categoryFilter !== 'All' || whFilter !== 'All' || state.filterLowStockOnly) ? `
+              ${(searchInput || categoryFilter !== 'All' || whFilter !== 'All' || supplierFilter !== 'All' || state.filterLowStockOnly) ? `
                 <button class="btn btn-secondary" onclick="resetComponentFilters()" title="Reset search & filters">
                   <i data-lucide="x" style="width:14px;"></i> Clear Filters
                 </button>
@@ -2910,14 +3565,14 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Product & SKU</th>
-                    <th>Category</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('name')}>Product & SKU ${sortIcon('name')}</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('category')}>Category ${sortIcon('category')}</th>
                     <th>Warehouse</th>
                     <th>Health Status</th>
-                    <th>Spare</th>
-                    <th>In Use</th>
-                    <th>Total</th>
-                    <th>Price ($)</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('spare')}>Spare ${sortIcon('spare')}</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('inuse')}>In Use ${sortIcon('inuse')}</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('total')}>Total ${sortIcon('total')}</th>
+                    <th style="cursor:pointer;user-select:none;" ${sortClick('price')}>Price (₹) ${sortIcon('price')}</th>
                     <th>Quick Actions</th>
                     <th>Actions</th>
                   </tr>
@@ -2942,7 +3597,7 @@
                       <td><strong style="color:var(--color-accent-teal);">${comp.spareQty}</strong></td>
                       <td><strong style="color:var(--color-accent-amber);">${comp.inUseQty}</strong></td>
                       <td><strong>${comp.totalQty} ${comp.unit}</strong></td>
-                      <td>$${(comp.price || 0).toFixed(2)}</td>
+                      <td>₹${(comp.price || 0).toFixed(2)}</td>
                       <td>
                         <div class="qty-assign-container">
                           <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
@@ -2981,8 +3636,8 @@
       // 3. PROJECTS VIEW
       else if (state.currentView === 'projects') {
         const filteredProjects = state.projects.filter(p => 
-          p.name.toLowerCase().includes(state.globalSearchQuery) || 
-          p.description.toLowerCase().includes(state.globalSearchQuery)
+          (p.name || '').toLowerCase().includes(state.globalSearchQuery) || 
+          (p.description || '').toLowerCase().includes(state.globalSearchQuery)
         );
 
         container.innerHTML = `
@@ -2999,12 +3654,12 @@
           <div class="content-panel">
             <div class="projects-grid" style="grid-template-columns: repeat(3, 1fr);">
               ${filteredProjects.map(proj => {
-                const itemsCount = proj.usedComponents.reduce((sum, item) => sum + item.qty, 0);
+                const itemsCount = (proj.usedComponents || []).reduce((sum, item) => sum + (item.qty || 0), 0);
                 return `
                   <div class="project-card" onclick="switchView('project-detail', '${proj.id}')">
                     <div class="project-card-header">
-                      <h4 class="project-card-title">${proj.name}</h4>
-                      <span class="project-badge ${proj.status.toLowerCase()}">${proj.status}</span>
+                      <h4 class="project-card-title">${proj.name || 'Untitled Project'}</h4>
+                      <span class="project-badge ${(proj.status || 'active').toLowerCase()}">${proj.status || 'Active'}</span>
                     </div>
                     <p class="project-card-desc">${proj.description || 'No description provided.'}</p>
                     <div class="project-card-meta">
@@ -3014,7 +3669,7 @@
                       </div>
                       <div class="project-card-meta-item">
                         <i data-lucide="calendar" style="width: 14px;"></i>
-                        <span>${proj.createdDate}</span>
+                        <span>${proj.createdDate || ''}</span>
                       </div>
                     </div>
                   </div>
@@ -3038,8 +3693,8 @@
           <div class="view-header">
             <div class="view-title-wrap">
               <div style="display:flex; align-items:center; gap:12px; margin-bottom: 8px;">
-                <span class="project-badge ${proj.status.toLowerCase()}">${proj.status}</span>
-                <span style="font-size: 13px; color: var(--color-text-muted);">Created on ${proj.createdDate}</span>
+                <span class="project-badge ${(proj.status || 'active').toLowerCase()}">${proj.status || 'Active'}</span>
+                <span style="font-size: 13px; color: var(--color-text-muted);">Created on ${proj.createdDate || ''}</span>
               </div>
               <h2>${proj.name}</h2>
               <div class="view-subtitle" style="margin-top: 6px; max-width: 800px; line-height: 1.6;">${proj.description || 'No description provided.'}</div>
@@ -3058,7 +3713,7 @@
           <div class="content-panel">
             <div class="tab-header">
               <button class="tab-btn active" id="tab-btn-in-use" onclick="switchDetailTab('in-use')">
-                In Use (${proj.usedComponents.length})
+                In Use (${(proj.usedComponents || []).length})
               </button>
               <button class="tab-btn" id="tab-btn-spare" onclick="switchDetailTab('spare')">
                 Spare Registry
@@ -3078,7 +3733,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${proj.usedComponents.map(uc => {
+                    ${(proj.usedComponents || []).map(uc => {
                       const comp = state.components.find(c => c.id === uc.componentId);
                       if (!comp) return '';
                       return `
@@ -3102,7 +3757,7 @@
                         </tr>
                       `;
                     }).join('')}
-                    ${proj.usedComponents.length === 0 ? '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project. Switch to "Spare Registry" tab to provision hardware.</td></tr>' : ''}
+                    ${(proj.usedComponents || []).length === 0 ? '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project. Switch to "Spare Registry" tab to provision hardware.</td></tr>' : ''}
                   </tbody>
                 </table>
               </div>
@@ -3326,9 +3981,14 @@
               <h2>Inventory Transaction Ledger</h2>
               <div class="view-subtitle">Automatic audit trail recording stock receipts, sales, project deployments, returns, and inter-warehouse movements.</div>
             </div>
-            <button class="btn btn-secondary" onclick="exportLedgerCSV()">
-              <i data-lucide="download"></i> Export Ledger CSV
-            </button>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-secondary" onclick="exportLedgerCSV()">
+                <i data-lucide="download"></i> Export Ledger CSV
+              </button>
+              <button class="btn btn-secondary" style="color:var(--color-accent-rose);border-color:rgba(225,29,72,0.2);" onclick="if(confirm('Remove all Playwright / test-injected items from inventory and history?')) cleanTestData();" title="Remove automated test data from Firebase">
+                <i data-lucide="trash-2"></i> Clean Test Data
+              </button>
+            </div>
           </div>
 
           <div class="content-panel">
