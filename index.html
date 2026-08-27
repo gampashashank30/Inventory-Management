@@ -2301,6 +2301,18 @@
       if (!e.target.closest('.profile-menu')) {
         document.getElementById('profile-dropdown').classList.remove('open');
       }
+      // Handle sortable column header clicks via data-sort delegation
+      const th = e.target.closest('th[data-sort]');
+      if (th) {
+        const field = th.getAttribute('data-sort');
+        if (state.sortField === field) {
+          state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sortField = field;
+          state.sortDir = 'asc';
+        }
+        render();
+      }
     });
 
     // View Navigation Switcher
@@ -3493,15 +3505,18 @@
           return 0;
         });
 
-        // Sort icon helper
+        // Sort icon helper (safe - no special chars injected into HTML attributes)
         function sortIcon(field) {
-          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;">⇅</span>';
+          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">⇅</span>';
           return state.sortDir === 'asc'
-            ? '<span style="color:var(--color-accent-purple);margin-left:4px;">▲</span>'
-            : '<span style="color:var(--color-accent-purple);margin-left:4px;">▼</span>';
+            ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▲</span>'
+            : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▼</span>';
         }
-        function sortClick(field) {
-          return `onclick="if(state.sortField==='${field}'){state.sortDir=state.sortDir==='asc'?'desc':'asc';}else{state.sortField='${field}';state.sortDir='asc';} render();"`;
+        // Safe sort th: uses data-sort attribute handled by delegated listener
+        function sortTh(field, label) {
+          const active = state.sortField === field;
+          const border = active ? 'border-bottom:2px solid var(--color-accent-purple);' : '';
+          return `<th style="cursor:pointer;user-select:none;${border}" data-sort="${field}">${label} ${sortIcon(field)}</th>`;
         }
 
         container.innerHTML = `
@@ -3565,14 +3580,14 @@
               <table>
                 <thead>
                   <tr>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('name')}>Product & SKU ${sortIcon('name')}</th>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('category')}>Category ${sortIcon('category')}</th>
+                    ${sortTh('name', 'Product &amp; SKU')}
+                    ${sortTh('category', 'Category')}
                     <th>Warehouse</th>
                     <th>Health Status</th>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('spare')}>Spare ${sortIcon('spare')}</th>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('inuse')}>In Use ${sortIcon('inuse')}</th>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('total')}>Total ${sortIcon('total')}</th>
-                    <th style="cursor:pointer;user-select:none;" ${sortClick('price')}>Price (₹) ${sortIcon('price')}</th>
+                    ${sortTh('spare', 'Spare')}
+                    ${sortTh('inuse', 'In Use')}
+                    ${sortTh('total', 'Total')}
+                    ${sortTh('price', 'Price (₹)')}
                     <th>Quick Actions</th>
                     <th>Actions</th>
                   </tr>
