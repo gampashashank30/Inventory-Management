@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Inven3 — Enterprise IoT Project & Inventory Management ERP</title>
+  <title>GG MAAD Inventory — Enterprise IoT Inventory Management ERP</title>
   
   <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -841,6 +841,19 @@
       border-bottom: var(--border-light);
       color: var(--color-text-main);
       vertical-align: middle;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Prevent super-long unbreakable strings from overflowing */
+    td div, td span:not(.sku-pill):not(.cat-badge):not(.stock-status-badge) {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    td:first-child {
+      max-width: 240px;
     }
 
     tr:last-child td {
@@ -1379,9 +1392,9 @@
   <aside>
     <div class="sidebar-header">
       <div class="brand">
-        <div class="brand-logo">3</div>
+        <div class="brand-logo">GG</div>
         <div>
-          <h1 class="brand-name">Inven3</h1>
+          <h1 class="brand-name">GG MAAD Inventory</h1>
           <span class="brand-sub">Enterprise Inventory ERP</span>
         </div>
       </div>
@@ -1436,8 +1449,8 @@
     <header>
       <div class="top-left">
         <div class="org-badge">
-          <div class="org-logo-placeholder">TM</div>
-          Top Most Systems Ltd
+          <div class="org-logo-placeholder">GG</div>
+          GG MAAD Inventory
         </div>
         <div class="global-search-container">
           <i data-lucide="search"></i>
@@ -1463,26 +1476,13 @@
 
         <div class="profile-menu">
           <div class="profile-trigger" onclick="toggleProfileDropdown()">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256" alt="Profile avatar" class="avatar">
-            <div class="profile-info">
-              <div class="profile-name">Segun Oloto</div>
-              <div class="profile-role">Procurement Director</div>
-            </div>
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--color-accent-purple),var(--color-accent-teal));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;font-family:var(--font-display);">GG</div>
             <i data-lucide="chevron-down" style="width: 14px; color: var(--color-text-muted);"></i>
           </div>
           
           <div class="profile-dropdown" id="profile-dropdown">
-            <a href="#" class="dropdown-item" onclick="switchView('dashboard')">
-              <i data-lucide="layout-dashboard" style="width: 16px;"></i> Dashboard
-            </a>
             <a href="#" class="dropdown-item" onclick="openModal('manage-categories')">
               <i data-lucide="tags" style="width: 16px;"></i> Category Manager
-            </a>
-            <a href="#" class="dropdown-item" onclick="switchView('reports')">
-              <i data-lucide="download" style="width: 16px;"></i> Export Data
-            </a>
-            <a href="#" class="dropdown-item logout" onclick="triggerToast('Session secured.')">
-              <i data-lucide="log-out" style="width: 16px;"></i> Lock Console
             </a>
           </div>
         </div>
@@ -3335,16 +3335,16 @@
             </div>
 
             <div class="metric-card">
-              <div class="gauge-widget">
-                <svg width="48" height="48" class="gauge-svg">
-                  <circle cx="24" cy="24" r="18" class="gauge-bg"/>
-                  <circle cx="24" cy="24" r="18" class="gauge-fill" stroke-dasharray="${strokeDash} 113"/>
-                </svg>
-                <div class="metric-details">
-                  <span class="metric-label">Stock Utility</span>
-                  <span class="metric-value">${sparePercent}%</span>
-                  <span class="metric-trend"><i data-lucide="sparkles" style="width:12px; color:var(--color-accent-teal);"></i> Free Buffer</span>
-                </div>
+              <div class="metric-icon-box rose">
+                <i data-lucide="shield-alert"></i>
+              </div>
+              <div class="metric-details">
+                <span class="metric-label">Low Stock Alerts</span>
+                <span class="metric-value" style="color:${lowStockItems.length > 0 ? 'var(--color-accent-rose)' : 'var(--color-accent-emerald)'}">${lowStockItems.length}</span>
+                <span class="metric-trend ${lowStockItems.length > 0 ? 'trend-warning' : 'trend-up'}">
+                  <i data-lucide="${lowStockItems.length > 0 ? 'alert-triangle' : 'check-circle'}" style="width:12px;"></i>
+                  ${lowStockItems.length === 0 ? 'All Healthy' : lowStockItems.filter(i=>i.spareQty===0).length + ' out of stock'}
+                </span>
               </div>
             </div>
           </div>
@@ -3466,7 +3466,7 @@
         const categoryFilter = document.getElementById('component-cat-filter')?.value || 'All';
         const whFilter = document.getElementById('component-wh-filter')?.value || 'All';
         const supplierFilter = document.getElementById('component-supplier-filter')?.value || 'All';
-        const searchInput = (document.getElementById('component-search')?.value || '').toLowerCase().trim();
+        const searchInput = ((document.getElementById('component-search')?.value || '') + ' ' + (state.globalSearchQuery || '')).toLowerCase().trim();
 
         // Pagination state
         if (!state.compPage) state.compPage = 1;
@@ -3483,7 +3483,8 @@
           const notes = (c.notes || '').toLowerCase();
           const cat = c.category || 'Other';
           const wh = c.warehouseId || '';
-          const mSearch = !searchInput || name.includes(searchInput) || sku.includes(searchInput) || sup.includes(searchInput) || notes.includes(searchInput);
+          const terms = searchInput.split(/\s+/).filter(Boolean);
+          const mSearch = !terms.length || terms.every(t => name.includes(t) || sku.includes(t) || sup.includes(t) || notes.includes(t) || (c.category||'').toLowerCase().includes(t));
           const mCat = categoryFilter === 'All' || cat.toLowerCase() === categoryFilter.toLowerCase();
           const mWh = whFilter === 'All' || wh === whFilter;
           const mSup = supplierFilter === 'All' || sup === supplierFilter.toLowerCase();
