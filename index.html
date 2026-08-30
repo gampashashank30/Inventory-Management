@@ -1866,22 +1866,31 @@
       'Other':              '#374151'
     };
 
+    // Clean and sanitize component name
+    function cleanComponentName(name) {
+      if (!name) return 'Unnamed Component';
+      let clean = String(name).trim();
+      // If the string starts with repeated letters (like AAAAAAAAA or WWWWWWWW followed by actual name)
+      clean = clean.replace(/^([A-Za-z])\1{4,}\s*/, '');
+      // If it's still completely corrupted (e.g. only repeated characters)
+      if (!clean || clean.length < 2 || /^([A-Za-z])\1+$/.test(clean)) {
+        return 'Microcontroller / Sensor Module';
+      }
+      return clean;
+    }
+
     // Detect corrupted / junk names (e.g. AAAAAAA..., WWWWWW...)
     function isCorruptedName(name) {
       if (!name || name.length < 4) return false;
-      // Check if name is all the same repeated character
-      const first = name[0];
-      if (name.split('').every(c => c === first)) return true;
-      // Check if < 3 unique chars in a long string (highly suspicious)
-      const unique = new Set(name.toLowerCase().replace(/\s/g,'')).size;
-      if (name.replace(/\s/g,'').length > 10 && unique <= 2) return true;
+      const str = String(name).trim();
+      // All same character
+      if (/^([A-Za-z0-9])\1+$/.test(str)) return true;
       return false;
     }
 
     // Map Firebase raw Excel item → app component format
     function mapFirebaseItem(fbKey, fbItem, idx, warehouseId) {
-      const rawName      = fbItem.name || 'Unknown';
-      // Skip corrupted entries silently by returning null (filtered below)
+      const rawName      = cleanComponentName(fbItem.name || 'Unknown');
       if (isCorruptedName(rawName)) return null;
       const rawTotal     = fbItem.totalQuantity;
       const rawRemaining = fbItem.remainingStock;
@@ -2020,12 +2029,12 @@
             state.components = Object.entries(rootData.inventory).map(([key, item], idx) => {
               if (item.id && item.sku) {
                 // Fully formatted component (previously saved from app)
-                // Skip corrupted names
-                if (isCorruptedName(item.name)) return null;
+                const sanitizedName = cleanComponentName(item.name || 'Unnamed');
+                if (isCorruptedName(sanitizedName)) return null;
                 return {
                   id:           item.id,
                   sku:          item.sku,
-                  name:         item.name         || 'Unnamed',
+                  name:         sanitizedName,
                   category:     item.category      || 'Other',
                   unit:         item.unit          || 'pcs',
                   totalQty:     Number(item.totalQty   ?? item.totalQuantity   ?? 0),
