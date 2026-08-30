@@ -841,19 +841,16 @@
       border-bottom: var(--border-light);
       color: var(--color-text-main);
       vertical-align: middle;
-      max-width: 280px;
+    }
+
+    /* Component name cell — clamp to single line with ellipsis */
+    .comp-name-cell {
+      max-width: 220px;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    /* Prevent super-long unbreakable strings from overflowing */
-    td div, td span:not(.sku-pill):not(.cat-badge):not(.stock-status-badge) {
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-
-    td:first-child {
-      max-width: 240px;
+      font-weight: 600;
+      font-size: 14px;
     }
 
     tr:last-child td {
@@ -1790,6 +1787,7 @@
       currentView: 'dashboard',
       selectedProjectId: null,
       globalSearchQuery: '',
+      compSearchQuery: '',
       filterLowStockOnly: false,
       sortField: 'name',
       sortDir: 'asc'
@@ -1868,8 +1866,23 @@
       'Other':              '#374151'
     };
 
+    // Detect corrupted / junk names (e.g. AAAAAAA..., WWWWWW...)
+    function isCorruptedName(name) {
+      if (!name || name.length < 4) return false;
+      // Check if name is all the same repeated character
+      const first = name[0];
+      if (name.split('').every(c => c === first)) return true;
+      // Check if < 3 unique chars in a long string (highly suspicious)
+      const unique = new Set(name.toLowerCase().replace(/\s/g,'')).size;
+      if (name.replace(/\s/g,'').length > 10 && unique <= 2) return true;
+      return false;
+    }
+
     // Map Firebase raw Excel item → app component format
     function mapFirebaseItem(fbKey, fbItem, idx, warehouseId) {
+      const rawName      = fbItem.name || 'Unknown';
+      // Skip corrupted entries silently by returning null (filtered below)
+      if (isCorruptedName(rawName)) return null;
       const rawTotal     = fbItem.totalQuantity;
       const rawRemaining = fbItem.remainingStock;
       const isNumericT   = typeof rawTotal === 'number';
@@ -1884,7 +1897,7 @@
       return {
         id:           'fb-' + fbKey,
         sku:          `${skuPrefix}-${String(idx + 1).padStart(3, '0')}`,
-        name:         fbItem.name || 'Unknown',
+        name:         rawName,
         category:     cat,
         unit:         isTextBased ? (String(rawTotal || rawRemaining || 'pcs').replace(/[0-9]/g, '').trim() || 'pcs') : 'pcs',
         totalQty:     isTextBased ? 1 : totalQty,
@@ -2007,6 +2020,8 @@
             state.components = Object.entries(rootData.inventory).map(([key, item], idx) => {
               if (item.id && item.sku) {
                 // Fully formatted component (previously saved from app)
+                // Skip corrupted names
+                if (isCorruptedName(item.name)) return null;
                 return {
                   id:           item.id,
                   sku:          item.sku,
@@ -2026,7 +2041,7 @@
               }
               // Raw Excel import format
               return mapFirebaseItem(key, item, idx, whId);
-            });
+            }).filter(Boolean);  // remove nulls from corrupted entries
           }
 
           // 2. Projects
@@ -2840,6 +2855,7 @@
     function resetComponentFilters() {
       state.filterLowStockOnly = false;
       state.globalSearchQuery = '';
+      state.compSearchQuery = '';
       const searchInput = document.getElementById('component-search');
       if (searchInput) searchInput.value = '';
       const catFilter = document.getElementById('component-cat-filter');
@@ -3466,7 +3482,8 @@
         const categoryFilter = document.getElementById('component-cat-filter')?.value || 'All';
         const whFilter = document.getElementById('component-wh-filter')?.value || 'All';
         const supplierFilter = document.getElementById('component-supplier-filter')?.value || 'All';
-        const searchInput = ((document.getElementById('component-search')?.value || '') + ' ' + (state.globalSearchQuery || '')).toLowerCase().trim();
+        // Use local search only — independent of header global search
+        const searchInput = (document.getElementById('component-search')?.value || state.compSearchQuery || '').toLowerCase().trim();
 
         // Pagination state
         if (!state.compPage) state.compPage = 1;
@@ -3546,11 +3563,11 @@
             const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
             const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
             return `<tr>
-              <td>
-                <div style="font-weight:600;font-size:14px;">${comp.name || 'Unnamed'}</div>
-                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
-                  <span class="sku-pill">${comp.sku || '—'}</span>
-                  <span style="font-size:11px;color:var(--color-text-muted);">${comp.supplier || 'N/A'}</span>
+              <td style="max-width:220px;">
+                <div class="comp-name-cell" title="${(comp.name || 'Unnamed').replace(/"/g,'&quot;')}">${comp.name || 'Unnamed'}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;overflow:hidden;">
+                  <span class="sku-pill" style="white-space:nowrap;">${comp.sku || '—'}</span>
+                  <span style="font-size:11px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${comp.supplier || 'N/A'}</span>
                 </div>
               </td>
               <td><span class="cat-badge" style="background:rgba(100,100,100,0.08);color:${catColor};border:1px solid rgba(100,100,100,0.15);">${comp.category || 'Other'}</span></td>
@@ -3633,7 +3650,7 @@
             <div class="search-filter-row">
               <div class="search-input-box">
                 <i data-lucide="search"></i>
-                <input type="text" id="component-search" placeholder="Search by name, SKU, vendor, details..." value="${searchInput}" oninput="state.compPage=1;render()">
+                <input type="text" id="component-search" placeholder="Search by name, SKU, vendor, details..." value="${searchInput}" oninput="state.compSearchQuery=this.value;state.compPage=1;render()">
               </div>
               <select id="component-cat-filter" class="filter-select" onchange="state.compPage=1;render()">
                 <option value="All">All Categories</option>
@@ -3912,7 +3929,7 @@
                     </div>
                     <div>
                       <div style="font-size:11px; color:var(--color-text-muted);">Value</div>
-                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">$${totalVal.toFixed(0)}</div>
+                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">₹${totalVal.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
                     </div>
                   </div>
 
@@ -3950,19 +3967,19 @@
           <div class="reports-stats-grid">
             <div class="report-card">
               <span class="metric-label">Total Inventory Valuation</span>
-              <span class="metric-value" style="color:var(--color-accent-teal);">$${totalInventoryValuation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span class="metric-value" style="color:var(--color-accent-teal);">₹${totalInventoryValuation.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span style="font-size:12px; color:var(--color-text-muted);">Calculated across ${totalUniqueParts} registered SKUs</span>
             </div>
 
             <div class="report-card">
               <span class="metric-label">Total Acquisition Cost</span>
-              <span class="metric-value">$${totalInventoryCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span class="metric-value">₹${totalInventoryCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span style="font-size:12px; color:var(--color-text-muted);">Procured hardware cost basis</span>
             </div>
 
             <div class="report-card">
               <span class="metric-label">Gross Margin Potential</span>
-              <span class="metric-value" style="color:var(--color-accent-purple);">${marginPct}% ($${potentialProfit.toFixed(2)})</span>
+              <span class="metric-value" style="color:var(--color-accent-purple);">${marginPct}% (₹${potentialProfit.toFixed(2)})</span>
               <span style="font-size:12px; color:var(--color-text-muted);">Mark-up spread across catalog</span>
             </div>
           </div>
@@ -3978,7 +3995,7 @@
                     <th>Category</th>
                     <th>SKU Count</th>
                     <th>Total Units</th>
-                    <th>Total Valuation ($)</th>
+                    <th>Total Valuation (₹)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -3997,7 +4014,7 @@
                         </td>
                         <td><strong>${items.length}</strong></td>
                         <td>${units}</td>
-                        <td><strong>$${val.toFixed(2)}</strong></td>
+                        <td><strong>₹${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
                         <td>
                           <button class="btn-action-sm secondary" onclick="state.currentView='components'; document.getElementById('component-cat-filter').value='${cat.name}'; render();">
                             View Items
