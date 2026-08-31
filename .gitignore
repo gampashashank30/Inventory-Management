@@ -5,3 +5,7 @@ blob-report/
 playwright/.cache/
 .DS_Store
 *.log
+*.txt
+*.csv
+*.xlsx
+firebase_inventory.json

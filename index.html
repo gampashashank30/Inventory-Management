@@ -1797,11 +1797,23 @@
         { id: "wh-3", name: "Field Assembly Workshop", location: "Building C, Workshop Bay 3", manager: "Marcus Vance", isDefault: false }
       ],
       categories: [
-        { id: "cat-1", name: "Sensor", color: "#b91c1c" },
-        { id: "cat-2", name: "Board", color: "#6d28d9" },
-        { id: "cat-3", name: "Module", color: "#0f766e" },
-        { id: "cat-4", name: "Wiring", color: "#b45309" },
-        { id: "cat-5", name: "Other", color: "#374151" }
+        { id: "cat-1", name: "Capacitors", color: "#0284c7" },
+        { id: "cat-2", name: "Resistors", color: "#ea580c" },
+        { id: "cat-3", name: "Batteries", color: "#d97706" },
+        { id: "cat-4", name: "Sensors", color: "#dc2626" },
+        { id: "cat-5", name: "Microcontrollers", color: "#7c3aed" },
+        { id: "cat-6", name: "Modules", color: "#0d9488" },
+        { id: "cat-7", name: "Semiconductors", color: "#4f46e5" },
+        { id: "cat-8", name: "Relays & Switches", color: "#b45309" },
+        { id: "cat-9", name: "LEDs & Displays", color: "#e11d48" },
+        { id: "cat-10", name: "Motors & Actuators", color: "#059669" },
+        { id: "cat-11", name: "Connectors & Cables", color: "#475569" },
+        { id: "cat-12", name: "Tools & PCB", color: "#6b7280" },
+        { id: "cat-13", name: "Sensor", color: "#dc2626" },
+        { id: "cat-14", name: "Board", color: "#7c3aed" },
+        { id: "cat-15", name: "Module", color: "#0d9488" },
+        { id: "cat-16", name: "Wiring", color: "#475569" },
+        { id: "cat-17", name: "Other", color: "#64748b" }
       ],
       components: [
         { id: "comp-1", sku: "BRD-ESP32-V1", name: "ESP32 DevKit V1", category: "Board", unit: "pcs", totalQty: 15, spareQty: 11, inUseQty: 4, minThreshold: 5, cost: 4.20, price: 8.50, supplier: "Adafruit", warehouseId: "wh-1", notes: "Espressif dual-core Wi-Fi & BLE development board." },
@@ -1846,20 +1858,28 @@
 
     // Category color map
     const CATEGORY_COLORS = {
-      'Microcontrollers':   '#6d28d9',
-      'Communication':      '#0f766e',
-      'Sensors':            '#b91c1c',
-      'Resistors':          '#374151',
-      'Capacitors':         '#0369a1',
-      'Semiconductors':     '#7c3aed',
-      'Relays & Switches':  '#b45309',
-      'Connectors & Cables':'#0f766e',
+      'Capacitors':         '#0284c7',
+      'Resistors':          '#ea580c',
+      'Batteries':          '#d97706',
       'Power & Batteries':  '#d97706',
-      'LEDs & Displays':    '#c2410c',
+      'Sensors':            '#dc2626',
+      'Sensor':             '#dc2626',
+      'Microcontrollers':   '#7c3aed',
+      'Board':              '#7c3aed',
+      'Modules':            '#0d9488',
+      'Module':             '#0d9488',
+      'Semiconductors':     '#4f46e5',
+      'Relays & Switches':  '#b45309',
+      'LEDs & Displays':    '#e11d48',
+      'Displays':           '#e11d48',
       'Motors & Actuators': '#059669',
+      'Connectors & Cables':'#475569',
+      'Connectors & Wiring':'#475569',
+      'Wiring':             '#475569',
+      'Communication':      '#0f766e',
       'Tools & PCB':        '#6b7280',
       'Misc Hardware':      '#374151',
-      'Other':              '#374151'
+      'Other':              '#64748b'
     };
 
     // Clean and sanitize component name
@@ -1916,15 +1936,58 @@
       };
     }
 
-    // Merge categories from Firebase items
-    function syncCategoriesFromFirebase(components) {
-      const seen = new Set(state.categories.map(c => c.name));
-      components.forEach(comp => {
-        if (!seen.has(comp.category)) {
-          seen.add(comp.category);
-          state.categories.push({ id: 'cat-fb-' + Date.now() + Math.random(), name: comp.category, color: CATEGORY_COLORS[comp.category] || '#374151' });
+    // Returns deduplicated categories sorted alphabetically with 'Other' at the end
+    function getSortedCategories() {
+      const seen = new Set();
+      const result = [];
+      (state.categories || []).forEach(c => {
+        if (!c || !c.name) return;
+        const key = c.name.trim().toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push(c);
         }
       });
+      result.sort((a, b) => {
+        if (a.name.toLowerCase() === 'other') return 1;
+        if (b.name.toLowerCase() === 'other') return -1;
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      });
+      return result;
+    }
+
+    // Merge standard categories and categories from components into state.categories
+    function syncCategoriesFromFirebase(components) {
+      if (!Array.isArray(state.categories)) state.categories = [];
+      const seen = new Set(state.categories.map(c => (c && c.name ? c.name.trim().toLowerCase() : '')));
+
+      // 1. Ensure all standard baseline categories exist
+      defaultData.categories.forEach(std => {
+        const key = std.name.trim().toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          state.categories.push({
+            id: 'cat-std-' + key.replace(/[^a-z0-9]/g, '-'),
+            name: std.name,
+            color: std.color || getCategoryColor(std.name)
+          });
+        }
+      });
+
+      // 2. Discover any additional categories present in components
+      if (Array.isArray(components)) {
+        components.forEach(comp => {
+          const cat = (comp && comp.category ? comp.category.trim() : '');
+          if (cat && !seen.has(cat.toLowerCase())) {
+            seen.add(cat.toLowerCase());
+            state.categories.push({
+              id: 'cat-comp-' + Date.now() + Math.random().toString(36).slice(2, 6),
+              name: cat,
+              color: getCategoryColor(cat)
+            });
+          }
+        });
+      }
     }
 
     // ── Real-Time Sync UI Helpers ──────────────────────────────────────────
@@ -2078,8 +2141,9 @@
               ? rootData.categories
               : Object.values(rootData.categories).filter(Boolean);
           } else {
-            syncCategoriesFromFirebase(state.components);
+            state.categories = [...defaultData.categories];
           }
+          syncCategoriesFromFirebase(state.components);
 
           // 5. Stock History
           if (rootData.stockHistory) {
@@ -2256,7 +2320,7 @@
         `);
       }
 
-      // ALWAYS render immediately \u2014 show dashboard with whatever data we have
+      syncCategoriesFromFirebase(state.components);
       updateLowStockBadge();
       populateDynamicDropdowns();
       lucide.createIcons();
@@ -2383,7 +2447,8 @@
       // 1. Categories
       const catSelect = document.getElementById('comp-category');
       if (catSelect) {
-        catSelect.innerHTML = state.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        const sortedCats = getSortedCategories();
+        catSelect.innerHTML = sortedCats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
       }
 
       // 2. Warehouses
@@ -2411,7 +2476,8 @@
       // 4. Categories list in modal
       const catList = document.getElementById('categories-list-container');
       if (catList) {
-        catList.innerHTML = state.categories.map(c => `
+        const sortedCats = getSortedCategories();
+        catList.innerHTML = sortedCats.map(c => `
           <div style="display:flex; justify-content:space-between; align-items:center; background:#f9f6f0; padding:8px 12px; border-radius:8px; border:1px solid #eae5dc;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${c.color || '#0d9488'};"></span>
@@ -3292,8 +3358,14 @@
     }
 
     function getCategoryColor(catName) {
-      const cat = state.categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
-      return cat ? cat.color : '#0d9488';
+      if (!catName) return '#64748b';
+      const clean = String(catName).trim();
+      const cat = (state.categories || []).find(c => c.name && c.name.toLowerCase() === clean.toLowerCase());
+      if (cat && cat.color) return cat.color;
+      if (CATEGORY_COLORS[clean]) return CATEGORY_COLORS[clean];
+      const match = Object.keys(CATEGORY_COLORS).find(k => k.toLowerCase() === clean.toLowerCase());
+      if (match) return CATEGORY_COLORS[match];
+      return '#64748b';
     }
 
     function getStockHealthBadge(comp) {
@@ -3819,7 +3891,7 @@
               </div>
               <select id="component-cat-filter" class="filter-select" onchange="state.compCatFilter=this.value;state.compPage=1;renderComponentsTableOnly()">
                 <option value="All" ${categoryFilter === 'All' ? 'selected' : ''}>All Categories</option>
-                ${state.categories.map(c => `<option value="${c.name}" ${categoryFilter === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+                ${getSortedCategories().map(c => `<option value="${c.name}" ${categoryFilter.toLowerCase() === c.name.toLowerCase() ? 'selected' : ''}>${c.name}</option>`).join('')}
               </select>
               <select id="component-wh-filter" class="filter-select" onchange="state.compWhFilter=this.value;state.compPage=1;renderComponentsTableOnly()">
                 <option value="All" ${whFilter === 'All' ? 'selected' : ''}>All Warehouses</option>
@@ -4169,10 +4241,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${state.categories.map(cat => {
-                    const items = state.components.filter(c => c.category === cat.name);
-                    const units = items.reduce((sum, c) => sum + c.totalQty, 0);
-                    const val = items.reduce((sum, c) => sum + (c.totalQty * (c.price || 0)), 0);
+                  ${getSortedCategories().map(cat => {
+                    const items = state.components.filter(c => (c.category || '').toLowerCase() === cat.name.toLowerCase());
+                    const units = items.reduce((sum, c) => sum + (c.totalQty || 0), 0);
+                    const val = items.reduce((sum, c) => sum + ((c.totalQty || 0) * (c.price || 0)), 0);
 
                     return `
                       <tr>
@@ -4185,7 +4257,7 @@
                         <td>${units}</td>
                         <td><strong>₹${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
                         <td>
-                          <button class="btn-action-sm secondary" onclick="state.currentView='components'; document.getElementById('component-cat-filter').value='${cat.name}'; render();">
+                          <button class="btn-action-sm secondary" onclick="state.currentView='components'; state.compCatFilter='${cat.name}'; state.compPage=1; render();">
                             View Items
                           </button>
                         </td>
