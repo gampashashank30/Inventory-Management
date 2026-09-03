@@ -1462,10 +1462,7 @@
           <div class="online-dot"></div>
           <span id="online-users-count">1 online</span>
         </div>
-        <button class="icon-button" id="btn-low-stock-bell" onclick="filterLowStockView()" title="Low stock alerts">
-          <i data-lucide="bell"></i>
-          <span class="icon-badge" id="low-stock-badge-count">0</span>
-        </button>
+
 
         <div class="profile-menu">
           <div class="profile-trigger" onclick="toggleProfileDropdown()">
@@ -1539,25 +1536,7 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="comp-cost">Purchase Cost (₹)</label>
-            <input type="number" id="comp-cost" min="0" step="0.01" value="4.50">
-          </div>
-          <div class="form-group">
-            <label for="comp-price">Selling / Book Value (₹)</label>
-            <input type="number" id="comp-price" min="0" step="0.01" value="8.00">
-          </div>
-        </div>
 
-        <div class="form-group">
-          <label for="comp-supplier">Supplier / Vendor</label>
-          <input type="text" id="comp-supplier" placeholder="e.g., Adafruit, Mouser, DigiKey">
-        </div>
-        <div class="form-group">
-          <label for="comp-notes">Datasheet URL / Technical Notes</label>
-          <textarea id="comp-notes" rows="2" placeholder="Operating voltage, pinouts, or specific lab directions..."></textarea>
-        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('register-component')">Cancel</button>
@@ -1632,8 +1611,24 @@
           </div>
         </div>
         <div class="form-group">
+          <label for="stock-out-project">Link to Project <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(optional)</span></label>
+          <select id="stock-out-project">
+            <option value="">— None / No Project —</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="stock-out-ref">Order / Dispatch Reference</label>
           <input type="text" id="stock-out-ref" placeholder="e.g., INV-9042, Client Deliverable">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="stock-out-assigned-by">Assigned By <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Issuer's name)</span></label>
+            <input type="text" id="stock-out-assigned-by" placeholder="e.g., Shashank, Dr. Elena" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="stock-out-assigned-to">Assigned To <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Recipient / Destination)</span></label>
+            <input type="text" id="stock-out-assigned-to" placeholder="e.g., Aqua Sense Team, Client ABC" autocomplete="off">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1768,6 +1763,43 @@
     </div>
   </div>
 
+  <!-- 8. Add Existing Component to Project Modal -->
+  <div class="modal-backdrop" id="modal-add-to-project">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add Component to Project</h3>
+        <button class="btn-close-modal" onclick="closeModal('add-to-project')">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="add-to-proj-component">Select Component</label>
+          <select id="add-to-proj-component" onchange="updateAddToProjectQtyMax()"
+            style="font-size:13.5px;padding:9px 13px;border-radius:8px;border:1px solid #eae5dc;outline:none;font-family:var(--font-body);background:white;"></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="add-to-proj-qty">Quantity to Assign *</label>
+            <input type="number" id="add-to-proj-qty" min="1" value="1">
+          </div>
+          <div class="form-group">
+            <label>Available Stock</label>
+            <div id="add-to-proj-spare-info"
+              style="padding:9px 13px;background:#f3f0ea;border-radius:8px;font-size:14px;font-weight:700;color:var(--color-accent-teal);border:1px solid #eae5dc;">—</div>
+          </div>
+        </div>
+        <div id="add-to-proj-warning" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#c2410c;font-weight:600;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('add-to-project')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitAddComponentToProject()">
+          <i data-lucide="check"></i> Assign to Project
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1816,24 +1848,38 @@
         { id: "cat-17", name: "Other", color: "#64748b" }
       ],
       components: [
-        { id: "comp-1", sku: "BRD-ESP32-V1", name: "ESP32 DevKit V1", category: "Board", unit: "pcs", totalQty: 15, spareQty: 11, inUseQty: 4, minThreshold: 5, cost: 4.20, price: 8.50, supplier: "Adafruit", warehouseId: "wh-1", notes: "Espressif dual-core Wi-Fi & BLE development board." },
-        { id: "comp-2", sku: "SNS-DHT22-AM2302", name: "DHT22 Temperature Sensor", category: "Sensor", unit: "pcs", totalQty: 22, spareQty: 18, inUseQty: 4, minThreshold: 6, cost: 3.10, price: 6.80, supplier: "Mouser", warehouseId: "wh-1", notes: "High accuracy capacitive humidity and temperature sensor." },
-        { id: "comp-3", sku: "SNS-HCSR04-ULTRA", name: "HC-SR04 Ultrasonic Sensor", category: "Sensor", unit: "pcs", totalQty: 10, spareQty: 8, inUseQty: 2, minThreshold: 4, cost: 1.80, price: 4.20, supplier: "SparkFun", warehouseId: "wh-2", notes: "5V sonar rangefinder operating from 2cm to 400cm." },
-        { id: "comp-4", sku: "WIR-JUMP-MF40", name: "M-F Jumper Wires 40-Pin", category: "Wiring", unit: "pack", totalQty: 5, spareQty: 3, inUseQty: 2, minThreshold: 5, cost: 1.20, price: 3.00, supplier: "DigiKey", warehouseId: "wh-1", notes: "40pin female to male ribbon wires pack 20cm." },
-        { id: "comp-5", sku: "MOD-RELAY-5V2CH", name: "5V Dual Channel Relay Module", category: "Module", unit: "pcs", totalQty: 8, spareQty: 8, inUseQty: 0, minThreshold: 3, cost: 2.50, price: 5.50, supplier: "Adafruit", warehouseId: "wh-3", notes: "Relay board for controlling AC/high current appliances." }
+        { id: "comp-1", sku: "BRD-ESP32-V1", name: "ESP32 DevKit V1", category: "Board", unit: "pcs", totalQty: 15, spareQty: 10, inUseQty: 5, minThreshold: 5, cost: 4.20, price: 8.50, supplier: "Adafruit", warehouseId: "wh-1", notes: "Espressif dual-core Wi-Fi & BLE development board." },
+        { id: "comp-2", sku: "SNS-DHT22-AM2302", name: "DHT22 Temperature Sensor", category: "Sensor", unit: "pcs", totalQty: 22, spareQty: 17, inUseQty: 5, minThreshold: 6, cost: 3.10, price: 6.80, supplier: "Mouser", warehouseId: "wh-1", notes: "High accuracy capacitive humidity and temperature sensor." },
+        { id: "comp-3", sku: "SNS-HCSR04-ULTRA", name: "HC-SR04 Ultrasonic Sensor", category: "Sensor", unit: "pcs", totalQty: 10, spareQty: 7, inUseQty: 3, minThreshold: 4, cost: 1.80, price: 4.20, supplier: "SparkFun", warehouseId: "wh-2", notes: "5V sonar rangefinder operating from 2cm to 400cm." },
+        { id: "comp-4", sku: "WIR-JUMP-MF40", name: "M-F Jumper Wires 40-Pin", category: "Wiring", unit: "pack", totalQty: 5, spareQty: 4, inUseQty: 1, minThreshold: 5, cost: 1.20, price: 3.00, supplier: "DigiKey", warehouseId: "wh-1", notes: "40pin female to male ribbon wires pack 20cm." },
+        { id: "comp-5", sku: "MOD-RELAY-5V2CH", name: "5V Dual Channel Relay Module", category: "Module", unit: "pcs", totalQty: 8, spareQty: 4, inUseQty: 4, minThreshold: 3, cost: 2.50, price: 5.50, supplier: "Adafruit", warehouseId: "wh-3", notes: "Relay board for controlling AC/high current appliances." }
       ],
       projects: [
-        { id: "proj-1", name: "Smart Greenhouse Auto-Waterer", description: "Automated climate controller using ESP32, DHT22 sensors, and a relay control shield for pump switches.", status: "Active", createdDate: "2026-06-12", usedComponents: [{ componentId: "comp-1", qty: 2 }, { componentId: "comp-2", qty: 2 }, { componentId: "comp-4", qty: 1 }] },
-        { id: "proj-2", name: "IoT Home Weather Hub", description: "Miniature meteorological station measuring pressure, temperature, and tracking rainfall metrics.", status: "Active", createdDate: "2026-07-01", usedComponents: [{ componentId: "comp-1", qty: 2 }, { componentId: "comp-2", qty: 2 }, { componentId: "comp-3", qty: 2 }, { componentId: "comp-4", qty: 1 }] },
-        { id: "proj-3", name: "Autonomous Plant Rover", description: "Mobile robot using ultrasonic sensor array to maneuver and capture real-time visual soil metrics.", status: "Completed", createdDate: "2026-05-18", usedComponents: [] }
+        { id: "proj-1", name: "Green Guard", description: "Smart environmental monitoring system using ESP32 and DHT22 sensors to track air quality, temperature, and humidity across agricultural and urban green zones.", status: "Active", createdDate: "2026-05-10", usedComponents: [{ componentId: "comp-1", qty: 2 }, { componentId: "comp-2", qty: 2 }] },
+        { id: "proj-2", name: "Gas Guard", description: "Industrial gas leak detection and real-time alert system with ESP32 edge nodes and jumper wire sensor arrays for hazardous environment monitoring.", status: "Active", createdDate: "2026-05-22", usedComponents: [{ componentId: "comp-1", qty: 1 }, { componentId: "comp-4", qty: 1 }] },
+        { id: "proj-3", name: "Aqua Sense", description: "Automated water quality and reservoir level sensing solution using HC-SR04 ultrasonic sensors and DHT22 for smart irrigation and flood detection.", status: "Active", createdDate: "2026-06-01", usedComponents: [{ componentId: "comp-2", qty: 2 }, { componentId: "comp-3", qty: 2 }] },
+        { id: "proj-4", name: "Street Wise", description: "Intelligent street lighting automation with ESP32-controlled dual-channel relay modules for adaptive brightness based on real-time ambient light and traffic density.", status: "Active", createdDate: "2026-06-15", usedComponents: [{ componentId: "comp-1", qty: 1 }, { componentId: "comp-5", qty: 2 }] },
+        { id: "proj-5", name: "Pulse Connect", description: "Wearable IoT health monitoring system capturing vital signs with DHT22 thermal sensors and HC-SR04 pulse detection, streaming data to a central health dashboard.", status: "Active", createdDate: "2026-07-04", usedComponents: [{ componentId: "comp-2", qty: 1 }, { componentId: "comp-3", qty: 1 }] },
+        { id: "proj-6", name: "Sehavi Enterprises", description: "Enterprise IoT deployment for smart factory floor automation using relay-controlled actuators and ESP32 edge compute nodes for production line monitoring and control.", status: "Active", createdDate: "2026-07-20", usedComponents: [{ componentId: "comp-1", qty: 1 }, { componentId: "comp-5", qty: 2 }] }
       ],
       stockHistory: [
-        { sNo: 1, date: "2026-06-12", sku: "BRD-ESP32-V1", componentName: "ESP32 DevKit V1", qty: 15, action: "Added", reason: "Initial Catalog Receipt", projectName: "", warehouseName: "Main Central Hub" },
-        { sNo: 2, date: "2026-06-12", sku: "SNS-DHT22-AM2302", componentName: "DHT22 Temperature Sensor", qty: 22, action: "Added", reason: "Initial Catalog Receipt", projectName: "", warehouseName: "Main Central Hub" },
-        { sNo: 3, date: "2026-06-12", sku: "BRD-ESP32-V1", componentName: "ESP32 DevKit V1", qty: 2, action: "Assigned to Project", reason: "Project Hardware Provision", projectName: "Smart Greenhouse Auto-Waterer", warehouseName: "Main Central Hub" },
-        { sNo: 4, date: "2026-06-12", sku: "SNS-DHT22-AM2302", componentName: "DHT22 Temperature Sensor", qty: 2, action: "Assigned to Project", reason: "Project Hardware Provision", projectName: "Smart Greenhouse Auto-Waterer", warehouseName: "Main Central Hub" },
-        { sNo: 5, date: "2026-07-02", sku: "SNS-HCSR04-ULTRA", componentName: "HC-SR04 Ultrasonic Sensor", qty: 10, action: "Added", reason: "Procurement Order PO-881", projectName: "", warehouseName: "IoT Research Lab" },
-        { sNo: 6, date: "2026-07-02", sku: "WIR-JUMP-MF40", componentName: "M-F Jumper Wires 40-Pin", qty: 5, action: "Added", reason: "Procurement Order PO-882", projectName: "", warehouseName: "Main Central Hub" }
+        { sNo: 1,  date: "2026-05-10", sku: "BRD-ESP32-V1",       componentName: "ESP32 DevKit V1",            qty: 15, action: "Added",              reason: "Initial Catalog Receipt",       projectName: "",                   warehouseName: "Main Central Hub" },
+        { sNo: 2,  date: "2026-05-10", sku: "SNS-DHT22-AM2302",   componentName: "DHT22 Temperature Sensor",    qty: 22, action: "Added",              reason: "Initial Catalog Receipt",       projectName: "",                   warehouseName: "Main Central Hub" },
+        { sNo: 3,  date: "2026-05-10", sku: "MOD-RELAY-5V2CH",    componentName: "5V Dual Channel Relay Module", qty:  8, action: "Added",              reason: "Procurement Order PO-880",       projectName: "",                   warehouseName: "Field Assembly Workshop" },
+        { sNo: 4,  date: "2026-05-10", sku: "BRD-ESP32-V1",       componentName: "ESP32 DevKit V1",            qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Green Guard",        warehouseName: "Main Central Hub" },
+        { sNo: 5,  date: "2026-05-10", sku: "SNS-DHT22-AM2302",   componentName: "DHT22 Temperature Sensor",    qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Green Guard",        warehouseName: "Main Central Hub" },
+        { sNo: 6,  date: "2026-05-22", sku: "BRD-ESP32-V1",       componentName: "ESP32 DevKit V1",            qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Gas Guard",          warehouseName: "Main Central Hub" },
+        { sNo: 7,  date: "2026-05-22", sku: "WIR-JUMP-MF40",      componentName: "M-F Jumper Wires 40-Pin",     qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Gas Guard",          warehouseName: "Main Central Hub" },
+        { sNo: 8,  date: "2026-06-01", sku: "SNS-HCSR04-ULTRA",   componentName: "HC-SR04 Ultrasonic Sensor",   qty: 10, action: "Added",              reason: "Procurement Order PO-881",       projectName: "",                   warehouseName: "IoT Research Lab" },
+        { sNo: 9,  date: "2026-06-01", sku: "WIR-JUMP-MF40",      componentName: "M-F Jumper Wires 40-Pin",     qty:  5, action: "Added",              reason: "Procurement Order PO-882",       projectName: "",                   warehouseName: "Main Central Hub" },
+        { sNo: 10, date: "2026-06-01", sku: "SNS-DHT22-AM2302",   componentName: "DHT22 Temperature Sensor",    qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Aqua Sense",         warehouseName: "Main Central Hub" },
+        { sNo: 11, date: "2026-06-01", sku: "SNS-HCSR04-ULTRA",   componentName: "HC-SR04 Ultrasonic Sensor",   qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Aqua Sense",         warehouseName: "IoT Research Lab" },
+        { sNo: 12, date: "2026-06-15", sku: "BRD-ESP32-V1",       componentName: "ESP32 DevKit V1",            qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Street Wise",        warehouseName: "Main Central Hub" },
+        { sNo: 13, date: "2026-06-15", sku: "MOD-RELAY-5V2CH",    componentName: "5V Dual Channel Relay Module", qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Street Wise",        warehouseName: "Field Assembly Workshop" },
+        { sNo: 14, date: "2026-07-04", sku: "SNS-DHT22-AM2302",   componentName: "DHT22 Temperature Sensor",    qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Pulse Connect",      warehouseName: "Main Central Hub" },
+        { sNo: 15, date: "2026-07-04", sku: "SNS-HCSR04-ULTRA",   componentName: "HC-SR04 Ultrasonic Sensor",   qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Pulse Connect",      warehouseName: "IoT Research Lab" },
+        { sNo: 16, date: "2026-07-20", sku: "BRD-ESP32-V1",       componentName: "ESP32 DevKit V1",            qty:  1, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Sehavi Enterprises", warehouseName: "Main Central Hub" },
+        { sNo: 17, date: "2026-07-20", sku: "MOD-RELAY-5V2CH",    componentName: "5V Dual Channel Relay Module", qty:  2, action: "Assigned to Project", reason: "Project Hardware Provision",     projectName: "Sehavi Enterprises", warehouseName: "Field Assembly Workshop" }
       ]
     };
 
@@ -1904,7 +1950,7 @@
       return false;
     }
 
-    // Map Firebase raw Excel item → app component format
+    // Map Firebase raw Excel item â†’ app component format
     function mapFirebaseItem(fbKey, fbItem, idx, warehouseId) {
       const rawName      = cleanComponentName(fbItem.name || 'Unknown');
       if (isCorruptedName(rawName)) return null;
@@ -1932,7 +1978,7 @@
         cost: 0, price: 0,
         supplier:     'MAAD Lab',
         warehouseId:  warehouseId,
-        notes:        isTextBased ? `Stock: ${rawRemaining || rawTotal || 'In stock'}` : (remaining === 0 ? '⚠️ Out of stock' : '')
+        notes:        isTextBased ? `Stock: ${rawRemaining || rawTotal || 'In stock'}` : (remaining === 0 ? '⚠️ Out of stock' : '')
       };
     }
 
@@ -2016,16 +2062,17 @@
     // Start Firebase real-time listener — the ONE source of truth
     async function startFirebaseListener() {
       try {
-        const { initializeApp, getApps }                               = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-        const { getDatabase, ref, onValue, set, onDisconnect, remove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+        const { initializeApp, getApps }                                       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+        const { getDatabase, ref, onValue, set, update, onDisconnect, remove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
 
         // Prevent "app already exists" error on hot-reload
         const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
         const db  = getDatabase(app);
 
-        window._fbRef = ref;
-        window._fbSet = set;
-        window._fbDb  = db;
+        window._fbRef    = ref;
+        window._fbSet    = set;
+        window._fbUpdate = update;
+        window._fbDb     = db;
 
         // ── Presence System ────────────────────────────────────────────────
         // Each browser session registers itself and removes on disconnect
@@ -2035,15 +2082,15 @@
         // Monitor connection state & write presence heartbeat
         onValue(ref(db, '/.info/connected'), (snap) => {
           if (snap.val() === true) {
-            updateSyncStatus('live', '\uD83D\uDFE2 Live');
+            updateSyncStatus('live', 'ðŸŸ¢ Live');
             set(presenceRef, { online: true, since: Date.now() });
             onDisconnect(presenceRef).remove();  // auto-clean on browser close
           } else {
-            updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+            updateSyncStatus('offline', 'ðŸ”´ Offline');
           }
         });
 
-        // Count active sessions → show "N online" badge
+        // Count active sessions â†’ show "N online" badge
         onValue(ref(db, '/presence'), (snap) => {
           const data  = snap.val();
           const count = data ? Object.values(data).filter(s => s && s.online).length : 0;
@@ -2072,6 +2119,12 @@
             stockHistory: rootData.stockHistory
           });
 
+          // If we just wrote this data locally, do NOT overwrite in-memory state with intermediate snapshot echoes
+          if (Date.now() - lastLocalWriteTime < 1800) {
+            prevDataSnapshot = currentDataSnap;
+            return;
+          }
+
           // Detect remote update: data changed AND we didn't just write locally
           const isRemoteUpdate = window._fbFirstLoadDone
             && prevDataSnapshot !== null
@@ -2080,7 +2133,7 @@
 
           prevDataSnapshot = currentDataSnap;
 
-          // ── Apply Firebase data → state ──
+          // ── Apply Firebase data â†’ state ──
 
           // 1. Inventory / Components
           if (rootData.inventory && typeof rootData.inventory === 'object') {
@@ -2147,9 +2200,12 @@
 
           // 5. Stock History
           if (rootData.stockHistory) {
-            state.stockHistory = Array.isArray(rootData.stockHistory)
+            state.stockHistory = (Array.isArray(rootData.stockHistory)
               ? rootData.stockHistory
-              : Object.values(rootData.stockHistory).filter(Boolean);
+              : Object.values(rootData.stockHistory)
+            ).filter(Boolean);
+          } else if (!Array.isArray(state.stockHistory) || state.stockHistory.length === 0) {
+            state.stockHistory = [...(defaultData.stockHistory || [])];
           }
 
           // Cache to localStorage for fast next load
@@ -2163,7 +2219,7 @@
           fbWriteBlocked = false;  // Now safe to write back
 
           const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          updateSyncStatus('live', '\uD83D\uDFE2 Live \u00B7 ' + syncTime);
+          updateSyncStatus('live', 'ðŸŸ¢ Live Â· ' + syncTime);
           updateLowStockBadge();
           populateDynamicDropdowns();
           lucide.createIcons();
@@ -2171,10 +2227,10 @@
 
           if (!window._fbFirstLoadDone) {
             window._fbFirstLoadDone = true;
-            triggerToast('\u26A1 Firebase connected: ' + state.components.length + ' components live');
+            triggerToast('âš¡ Firebase connected: ' + state.components.length + ' components live');
           } else if (isRemoteUpdate) {
             // Another device pushed an update — notify and visually flash
-            triggerToast('\uD83D\uDD04 Remote update \u2014 data refreshed from another device');
+            triggerToast('ðŸ”„ Remote update — data refreshed from another device');
             const vc = document.getElementById('view-content');
             if (vc) {
               vc.classList.add('remote-update-flash');
@@ -2184,36 +2240,36 @@
         }, (error) => {
           const bar = document.getElementById('fb-loading-bar');
           if (bar) bar.remove();
-          updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+          updateSyncStatus('offline', 'ðŸ”´ Offline');
           console.error('Firebase error:', error);
-          triggerToast('\u26A0\uFE0F Firebase: ' + error.message, true);
+          triggerToast('⚠️ Firebase: ' + error.message, true);
           render(); // Always render something
         });
 
       } catch (err) {
         console.error('Firebase load error:', err);
-        updateSyncStatus('offline', '\uD83D\uDD34 Offline');
+        updateSyncStatus('offline', 'ðŸ”´ Offline');
         loadFromLocalStorageFallback();
       }
     }
 
     // Write state to Firebase — only after Firebase has given us its data first
-    // Uses path-specific writes so /presence node is never overwritten
+    // Uses atomic path writes so /presence node is never overwritten
     async function syncFullStateToFirebase(immediate = false) {
       if (fbWriteBlocked) {
-        console.log('Write blocked \u2014 waiting for Firebase data first');
+        console.log('Write blocked — waiting for Firebase data first');
         return;
       }
       clearTimeout(fbWriteDebounce);
       fbWriteDebounce = setTimeout(async () => {
         try {
-          updateSyncStatus('syncing', '\uD83D\uDD04 Syncing...');
+          updateSyncStatus('syncing', 'ðŸ”„ Syncing...');
           lastLocalWriteTime = Date.now();  // Mark as a local write so onValue doesn't treat the echo as a remote update
 
           const ref = window._fbRef;
           const set = window._fbSet;
           const db  = window._fbDb;
-          if (!ref || !set || !db) return;
+          if (!ref || !db) return;
 
           const inventoryMap = {};
           state.components.forEach((c, idx) => {
@@ -2232,20 +2288,31 @@
             };
           });
 
-          // Write to specific paths — avoids overwriting the /presence node
-          await Promise.all([
-            set(ref(db, '/inventory'),    inventoryMap),
-            set(ref(db, '/projects'),     state.projects     || []),
-            set(ref(db, '/warehouses'),   state.warehouses   || []),
-            set(ref(db, '/categories'),   state.categories   || []),
-            set(ref(db, '/stockHistory'), state.stockHistory || [])
-          ]);
+          const updatePayload = {
+            'inventory':    inventoryMap,
+            'projects':     state.projects     || [],
+            'warehouses':   state.warehouses   || [],
+            'categories':   state.categories   || [],
+            'stockHistory': state.stockHistory || []
+          };
+
+          if (window._fbUpdate) {
+            await window._fbUpdate(ref(db, '/'), updatePayload);
+          } else if (set) {
+            await Promise.all([
+              set(ref(db, '/inventory'),    inventoryMap),
+              set(ref(db, '/projects'),     state.projects     || []),
+              set(ref(db, '/warehouses'),   state.warehouses   || []),
+              set(ref(db, '/categories'),   state.categories   || []),
+              set(ref(db, '/stockHistory'), state.stockHistory || [])
+            ]);
+          }
 
           const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          updateSyncStatus('live', '\uD83D\uDFE2 Live \u00B7 ' + syncTime);
-          console.log('\u26A1 Firebase synced at ' + syncTime);
+          updateSyncStatus('live', 'ðŸŸ¢ Live Â· ' + syncTime);
+          console.log('âš¡ Firebase synced at ' + syncTime);
         } catch (err) {
-          updateSyncStatus('offline', '\uD83D\uDD34 Offline \u2014 retry pending');
+          updateSyncStatus('offline', 'ðŸ”´ Offline — retry pending');
           console.warn('Firebase write failed:', err);
         }
       }, immediate ? 80 : 250);
@@ -2273,7 +2340,7 @@
         state.categories   = defaultData.categories;
         state.stockHistory = defaultData.stockHistory;
       }
-      triggerToast('⚠️ Offline mode \u2014 changes saved locally only', true);
+      triggerToast('⚠️ Offline mode \u2014 changes saved locally only', true);
       updateLowStockBadge();
       populateDynamicDropdowns();
       lucide.createIcons();
@@ -2429,10 +2496,10 @@
         document.getElementById('comp-unit').value = 'pcs';
         document.getElementById('comp-qty').value = '10';
         document.getElementById('comp-min-threshold').value = '5';
-        document.getElementById('comp-cost').value = '4.50';
-        document.getElementById('comp-price').value = '8.00';
-        document.getElementById('comp-supplier').value = '';
-        document.getElementById('comp-notes').value = '';
+        document.getElementById('comp-cost') && (document.getElementById('comp-cost').value = '0');
+        document.getElementById('comp-price') && (document.getElementById('comp-price').value = '0');
+        document.getElementById('comp-supplier') && (document.getElementById('comp-supplier').value = '');
+        document.getElementById('comp-notes') && (document.getElementById('comp-notes').value = '');
         document.getElementById('comp-qty').disabled = false;
         document.getElementById('btn-save-comp').innerText = "Register Component";
         document.getElementById('modal-comp-title').innerText = "Register New Component";
@@ -2468,10 +2535,17 @@
       const outComp = document.getElementById('stock-out-component');
       const trComp = document.getElementById('transfer-component');
 
-      const compOptions = state.components.map(c => `<option value="${c.id}">${c.name} (${c.sku}) — Spare: ${c.spareQty} ${c.unit}</option>`).join('');
+      const compOptions = state.components.map(c => `<option value="${c.id}">${c.name} (${c.sku}) — Available: ${c.spareQty} ${c.unit}</option>`).join('');
       if (inComp) inComp.innerHTML = compOptions;
       if (outComp) outComp.innerHTML = compOptions;
       if (trComp) trComp.innerHTML = compOptions;
+
+      // 3b. Projects for Stock Out
+      const outProj = document.getElementById('stock-out-project');
+      if (outProj) {
+        const projOptions = state.projects.map(p => `<option value="${p.id}">${p.name}${p.status ? ' (' + p.status + ')' : ''}</option>`).join('');
+        outProj.innerHTML = '<option value="">— None / No Project —</option>' + projOptions;
+      }
 
       // 4. Categories list in modal
       const catList = document.getElementById('categories-list-container');
@@ -2524,6 +2598,35 @@
       render();
     }
 
+    // ── Stock History Ledger Logger ─────────────────────────────────────────
+    function addStockHistoryEntry({ sku = '', componentName = 'Item', qty = 1, action = 'Stock In (PO)', reason = '', projectName = '', warehouseName = '', assignedBy = '', assignedTo = '' }) {
+      if (!Array.isArray(state.stockHistory)) {
+        state.stockHistory = [];
+      }
+      const maxSNo = state.stockHistory.reduce((max, h) => Math.max(max, Number(h && h.sNo) || 0), 0);
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const localDate = `${year}-${month}-${day}`;
+
+      const entry = {
+        sNo: maxSNo + 1,
+        date: localDate,
+        sku: sku || '',
+        componentName: componentName || 'Item',
+        qty: Number(qty) || 0,
+        action: action,
+        reason: reason || '—',
+        projectName: projectName || '',
+        warehouseName: warehouseName || '—',
+        assignedBy: assignedBy || '',
+        assignedTo: assignedTo || ''
+      };
+      state.stockHistory.push(entry);
+      return entry;
+    }
+
     // 1. Submit Product Registration / Edit
     function submitRegisterComponent() {
       const id = document.getElementById('comp-edit-id').value;
@@ -2533,11 +2636,11 @@
       const unit = document.getElementById('comp-unit').value.trim() || 'pcs';
       const qty = parseInt(document.getElementById('comp-qty').value) || 0;
       const minThreshold = parseInt(document.getElementById('comp-min-threshold').value) || 5;
-      const cost = parseFloat(document.getElementById('comp-cost').value) || 0;
-      const price = parseFloat(document.getElementById('comp-price').value) || 0;
+      const cost = 0;
+      const price = 0;
       const warehouseId = document.getElementById('comp-warehouse').value || (state.warehouses[0] ? state.warehouses[0].id : '');
-      const supplier = document.getElementById('comp-supplier').value.trim();
-      const notes = document.getElementById('comp-notes').value.trim();
+      const supplier = '';
+      const notes = '';
 
       if (!name) {
         triggerToast("Component name is required!", true);
@@ -2585,9 +2688,7 @@
               return;
             }
 
-            state.stockHistory.push({
-              sNo: state.stockHistory.length + 1,
-              date: new Date().toISOString().split('T')[0],
+            addStockHistoryEntry({
               sku: sku,
               componentName: name,
               qty: Math.abs(diff),
@@ -2619,9 +2720,7 @@
         };
         state.components.push(newComp);
         
-        state.stockHistory.push({
-          sNo: state.stockHistory.length + 1,
-          date: new Date().toISOString().split('T')[0],
+        addStockHistoryEntry({
           sku: sku,
           componentName: name,
           qty: qty,
@@ -2653,11 +2752,7 @@
       document.getElementById('comp-unit').value = comp.unit;
       document.getElementById('comp-qty').value = comp.totalQty;
       document.getElementById('comp-min-threshold').value = comp.minThreshold !== undefined ? comp.minThreshold : 5;
-      document.getElementById('comp-cost').value = comp.cost !== undefined ? comp.cost : 0;
-      document.getElementById('comp-price').value = comp.price !== undefined ? comp.price : 0;
       document.getElementById('comp-warehouse').value = comp.warehouseId || (state.warehouses[0] ? state.warehouses[0].id : '');
-      document.getElementById('comp-supplier').value = comp.supplier;
-      document.getElementById('comp-notes').value = comp.notes;
 
       document.getElementById('btn-save-comp').innerText = "Save Changes";
       document.getElementById('modal-comp-title').innerText = "Edit Component Details";
@@ -2674,12 +2769,10 @@
           proj.usedComponents = (proj.usedComponents || []).filter(uc => uc.componentId !== compId);
         });
 
-        state.stockHistory.push({
-          sNo: state.stockHistory.length + 1,
-          date: new Date().toISOString().split('T')[0],
+        addStockHistoryEntry({
           sku: comp.sku,
           componentName: comp.name,
-          qty: comp.totalQty,
+          qty: comp.totalQty || 0,
           action: "Removed",
           reason: "Product Deleted from Registry",
           projectName: "",
@@ -2700,21 +2793,27 @@
       const whId = document.getElementById('stock-in-warehouse').value;
       const po = document.getElementById('stock-in-po').value.trim() || 'Direct Restock';
 
+      if (!compId) {
+        triggerToast("Please select a component to stock in.", true);
+        return;
+      }
+
       if (qty <= 0) {
         triggerToast("Please enter a valid received quantity greater than 0.", true);
         return;
       }
 
       const comp = state.components.find(c => c.id === compId);
-      if (!comp) return;
+      if (!comp) {
+        triggerToast("Selected component was not found in catalog.", true);
+        return;
+      }
 
-      comp.totalQty += qty;
-      comp.spareQty += qty;
+      comp.totalQty = (Number(comp.totalQty) || 0) + qty;
+      comp.spareQty = (Number(comp.spareQty) || 0) + qty;
       if (whId) comp.warehouseId = whId;
 
-      state.stockHistory.push({
-        sNo: state.stockHistory.length + 1,
-        date: new Date().toISOString().split('T')[0],
+      addStockHistoryEntry({
         sku: comp.sku,
         componentName: comp.name,
         qty: qty,
@@ -2726,7 +2825,7 @@
 
       saveState();
       closeModal('stock-in');
-      triggerToast(`Successfully received +${qty} ${comp.unit} of "${comp.name}".`);
+      triggerToast(`Successfully received +${qty} ${comp.unit || 'pcs'} of "${comp.name}".`);
       render();
     }
 
@@ -2747,13 +2846,18 @@
 
     // 3. Submit Quick Stock Out (Sales / Dispatch)
     function submitStockOut() {
-      const compId = document.getElementById('stock-out-component').value;
-      const qty = parseInt(document.getElementById('stock-out-qty').value) || 0;
-      const reason = document.getElementById('stock-out-reason').value;
-      const ref = document.getElementById('stock-out-ref').value.trim() || reason;
+      const compId     = document.getElementById('stock-out-component').value;
+      const qty        = parseInt(document.getElementById('stock-out-qty').value) || 0;
+      const reason     = document.getElementById('stock-out-reason').value;
+      const ref        = document.getElementById('stock-out-ref').value.trim() || reason;
+      const projId     = document.getElementById('stock-out-project').value;
+      const assignedBy = document.getElementById('stock-out-assigned-by').value.trim();
+      const assignedTo = document.getElementById('stock-out-assigned-to').value.trim();
+      const proj       = projId ? state.projects.find(p => p.id === projId) : null;
+      const projName   = proj ? proj.name : '';
 
       if (!compId) {
-        triggerToast("Please select a component.", true);
+        triggerToast("Please select a component to stock out.", true);
         return;
       }
 
@@ -2763,31 +2867,61 @@
       }
 
       const comp = state.components.find(c => c.id === compId);
-      if (!comp) return;
-
-      if (comp.spareQty < qty) {
-        triggerToast(`Insufficient spare stock! Only ${comp.spareQty} ${comp.unit} available.`, true);
+      if (!comp) {
+        triggerToast("Selected component was not found in catalog.", true);
         return;
       }
 
-      comp.spareQty -= qty;
-      comp.totalQty -= qty;
+      if ((comp.spareQty || 0) < qty) {
+        triggerToast(`Insufficient stock! Only ${comp.spareQty || 0} ${comp.unit || 'pcs'} available.`, true);
+        return;
+      }
 
-      state.stockHistory.push({
-        sNo: state.stockHistory.length + 1,
-        date: new Date().toISOString().split('T')[0],
-        sku: comp.sku,
-        componentName: comp.name,
-        qty: qty,
-        action: "Stock Out (Sale)",
-        reason: `${reason} [${ref}]`,
-        projectName: "",
-        warehouseName: getWarehouseName(comp.warehouseId)
-      });
+      if (proj) {
+        // Project-linked: spare â†’ in-use (units stay in total, just deployed to project)
+        comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
+        comp.inUseQty = (Number(comp.inUseQty) || 0) + qty;
+
+        if (!Array.isArray(proj.usedComponents)) proj.usedComponents = [];
+        const existing = proj.usedComponents.find(uc => uc.componentId === comp.id);
+        if (existing) {
+          existing.qty += qty;
+        } else {
+          proj.usedComponents.push({ componentId: comp.id, qty: qty });
+        }
+
+        addStockHistoryEntry({
+          sku:           comp.sku,
+          componentName: comp.name,
+          qty:           qty,
+          action:        "Assigned to Project",
+          reason:        `${reason} [${ref}]`,
+          projectName:   projName,
+          warehouseName: getWarehouseName(comp.warehouseId),
+          assignedBy:    assignedBy,
+          assignedTo:    assignedTo
+        });
+      } else {
+        // No project: true dispatch / sale — units leave inventory entirely
+        comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
+        comp.totalQty = Math.max(0, (Number(comp.totalQty) || 0) - qty);
+
+        addStockHistoryEntry({
+          sku:           comp.sku,
+          componentName: comp.name,
+          qty:           qty,
+          action:        "Stock Out (Sale)",
+          reason:        `${reason} [${ref}]`,
+          projectName:   '',
+          warehouseName: getWarehouseName(comp.warehouseId),
+          assignedBy:    assignedBy,
+          assignedTo:    assignedTo
+        });
+      }
 
       saveState();
       closeModal('stock-out');
-      triggerToast(`Dispatched -${qty} ${comp.unit} of "${comp.name}".`);
+      triggerToast(`Dispatched -${qty} ${comp.unit || 'pcs'} of "${comp.name}".`);
       render();
     }
 
@@ -2798,7 +2932,10 @@
         document.getElementById('stock-out-component').value = compId;
       }
       document.getElementById('stock-out-qty').value = '1';
+      document.getElementById('stock-out-project').value = '';
       document.getElementById('stock-out-ref').value = '';
+      document.getElementById('stock-out-assigned-by').value = '';
+      document.getElementById('stock-out-assigned-to').value = '';
       setTimeout(() => document.getElementById('stock-out-qty').focus(), 100);
     }
 
@@ -2808,6 +2945,11 @@
       const srcId = document.getElementById('transfer-source').value;
       const tgtId = document.getElementById('transfer-target').value;
       const qty = parseInt(document.getElementById('transfer-qty').value) || 0;
+
+      if (!compId) {
+        triggerToast("Please select a component.", true);
+        return;
+      }
 
       if (srcId === tgtId) {
         triggerToast("Source and target warehouse must be different!", true);
@@ -2822,28 +2964,26 @@
       const comp = state.components.find(c => c.id === compId);
       if (!comp) return;
 
-      if (comp.spareQty < qty) {
-        triggerToast(`Cannot transfer ${qty} units. Only ${comp.spareQty} available in spare stock!`, true);
+      if ((comp.spareQty || 0) < qty) {
+        triggerToast(`Cannot transfer ${qty} units. Only ${comp.spareQty || 0} available in stock!`, true);
         return;
       }
 
       comp.warehouseId = tgtId;
 
-      state.stockHistory.push({
-        sNo: state.stockHistory.length + 1,
-        date: new Date().toISOString().split('T')[0],
+      addStockHistoryEntry({
         sku: comp.sku,
         componentName: comp.name,
         qty: qty,
         action: "Transferred",
         reason: `Moved from ${getWarehouseName(srcId)} to ${getWarehouseName(tgtId)}`,
         projectName: "",
-        warehouseName: `${getWarehouseName(srcId)} ➔ ${getWarehouseName(tgtId)}`
+        warehouseName: `${getWarehouseName(srcId)} âž” ${getWarehouseName(tgtId)}`
       });
 
       saveState();
       closeModal('stock-transfer');
-      triggerToast(`Transferred ${qty} ${comp.unit} of "${comp.name}" to ${getWarehouseName(tgtId)}.`);
+      triggerToast(`Transferred ${qty} ${comp.unit || 'pcs'} of "${comp.name}" to ${getWarehouseName(tgtId)}.`);
       render();
     }
 
@@ -2903,16 +3043,14 @@
 
         state.warehouses = state.warehouses.filter(w => w.id !== whId);
         
-        state.stockHistory.push({
-          sNo: state.stockHistory.length + 1,
-          date: new Date().toISOString().split('T')[0],
+        addStockHistoryEntry({
           sku: '',
           componentName: `Warehouse Deleted`,
           qty: componentsInWh.length,
           action: "Removed",
           reason: `Warehouse "${wh.name}" deleted (items moved to ${remainingWh.name})`,
           projectName: "",
-          warehouseName: `${wh.name} ➔ ${remainingWh.name}`
+          warehouseName: `${wh.name} âž” ${remainingWh.name}`
         });
 
         saveState();
@@ -2990,7 +3128,7 @@
       const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
       if (!paginated.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--color-text-muted);">
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--color-text-muted);">
           <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
             <div>No components match the current search "${searchInput}".</div>
             <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
@@ -3001,7 +3139,6 @@
           const health = getStockHealthBadge(comp);
           const whName = getWarehouseName(comp.warehouseId);
           const price = (comp.price || 0).toFixed(2);
-          const spareQty = comp.spareQty !== undefined ? comp.spareQty : 0;
           const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
           const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
           return `<tr>
@@ -3015,10 +3152,9 @@
             <td><span class="cat-badge" style="background:rgba(100,100,100,0.08);color:${catColor};border:1px solid rgba(100,100,100,0.15);">${comp.category || 'Other'}</span></td>
             <td><span style="font-size:12.5px;color:var(--color-text-muted);">${whName}</span></td>
             <td>${health}</td>
-            <td><strong style="color:var(--color-accent-teal);">${spareQty}</strong></td>
             <td><strong style="color:var(--color-accent-amber);">${inUseQty}</strong></td>
             <td><strong>${totalQty} ${comp.unit || 'pcs'}</strong></td>
-            <td>₹${price}</td>
+            <td>â‚¹${price}</td>
             <td>
               <div class="qty-assign-container">
                 <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
@@ -3051,7 +3187,7 @@
           if (i === 1 || i === totalPages || (i >= state.compPage - range && i <= state.compPage + range)) {
             pages += `<button class="btn btn-secondary" style="min-width:36px;padding:6px 10px;${i === state.compPage ? 'background:var(--color-accent-purple);color:#fff;border-color:var(--color-accent-purple);' : ''}" onclick="state.compPage=${i};renderComponentsTableOnly();">${i}</button>`;
           } else if (i === state.compPage - range - 1 || i === state.compPage + range + 1) {
-            pages += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+            pages += `<span style="padding:0 4px;color:var(--color-text-muted);">â€¦</span>`;
           }
         }
         paginWrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px;flex-wrap:wrap;gap:8px;">
@@ -3059,9 +3195,9 @@
             Showing <strong>${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;renderComponentsTableOnly();">← Prev</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;renderComponentsTableOnly();">â† Prev</button>
             ${pages}
-            <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;renderComponentsTableOnly();">Next →</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;renderComponentsTableOnly();">Next â†’</button>
           </div>
         </div>`;
       }
@@ -3159,16 +3295,14 @@
       const proj = state.projects.find(p => p.id === projId);
       if (!proj) return;
 
-      if (confirm(`Delete "${proj.name}"? All assigned hardware will be restored to Spare stock.`)) {
+      if (confirm(`Delete "${proj.name}"? All assigned hardware will be restored to available stock.`)) {
         proj.usedComponents.forEach(uc => {
           const comp = state.components.find(c => c.id === uc.componentId);
           if (comp) {
             comp.spareQty += uc.qty;
             comp.inUseQty -= uc.qty;
             
-            state.stockHistory.push({
-              sNo: state.stockHistory.length + 1,
-              date: new Date().toISOString().split('T')[0],
+            addStockHistoryEntry({
               sku: comp.sku,
               componentName: comp.name,
               qty: uc.qty,
@@ -3203,7 +3337,7 @@
       if (!comp || !proj) return;
 
       if (comp.spareQty < qty) {
-        triggerToast(`Insufficient spare stock. Only ${comp.spareQty} ${comp.unit} available!`, true);
+        triggerToast(`Insufficient stock. Only ${comp.spareQty} ${comp.unit} available!`, true);
         return;
       }
 
@@ -3217,9 +3351,7 @@
         proj.usedComponents.push({ componentId: compId, qty: qty });
       }
 
-      state.stockHistory.push({
-        sNo: state.stockHistory.length + 1,
-        date: new Date().toISOString().split('T')[0],
+      addStockHistoryEntry({
         sku: comp.sku,
         componentName: comp.name,
         qty: qty,
@@ -3263,9 +3395,7 @@
         proj.usedComponents = (proj.usedComponents || []).filter(uc => uc.componentId !== compId);
       }
 
-      state.stockHistory.push({
-        sNo: state.stockHistory.length + 1,
-        date: new Date().toISOString().split('T')[0],
+      addStockHistoryEntry({
         sku: comp.sku,
         componentName: comp.name,
         qty: qty,
@@ -3276,7 +3406,7 @@
       });
 
       saveState();
-      triggerToast(`Returned ${qty} pcs of "${comp.name}" to spare inventory.`);
+      triggerToast(`Returned ${qty} pcs of "${comp.name}" to inventory.`);
       render();
     }
 
@@ -3289,8 +3419,8 @@
         const category = document.getElementById('comp-category').value;
         const unit = document.getElementById('comp-unit').value.trim() || 'pcs';
         const qty = parseInt(document.getElementById('comp-qty').value) || 0;
-        const supplier = document.getElementById('comp-supplier').value.trim();
-        const notes = document.getElementById('comp-notes').value.trim();
+        const supplier = '';
+        const notes = '';
 
         if (!name) {
           triggerToast("Component name is required!", true);
@@ -3319,9 +3449,7 @@
         const proj = state.projects.find(p => p.id === projectId);
         if (proj) proj.usedComponents.push({ componentId: newId, qty: qty });
 
-        state.stockHistory.push({
-          sNo: state.stockHistory.length + 1,
-          date: new Date().toISOString().split('T')[0],
+        addStockHistoryEntry({
           sku: sku,
           componentName: name,
           qty: qty,
@@ -3331,9 +3459,7 @@
           warehouseName: "Main Central Hub"
         });
 
-        state.stockHistory.push({
-          sNo: state.stockHistory.length + 2,
-          date: new Date().toISOString().split('T')[0],
+        addStockHistoryEntry({
           sku: sku,
           componentName: name,
           qty: qty,
@@ -3402,6 +3528,13 @@
         const nameMatch = testNames.some(n => (c.name || '').toLowerCase().includes(n));
         return !idMatch && !skuMatch && !nameMatch;
       });
+      if (Array.isArray(state.stockHistory)) {
+        state.stockHistory = state.stockHistory.filter(h => {
+          const skuMatch = testSKUPatterns.some(r => r.test(h.sku || ''));
+          const nameMatch = testNames.some(n => (h.componentName || '').toLowerCase().includes(n));
+          return !skuMatch && !nameMatch;
+        });
+      }
       const removed = before - state.components.length;
       saveState();
       render();
@@ -3410,7 +3543,7 @@
 
     // 9. Export to CSV Engine
     function exportCatalogCSV() {
-      let csv = 'SKU,Component Name,Category,Spare Qty,In Use Qty,Total Qty,Unit,Cost (₹),Price (₹),Total Asset Value (₹),Warehouse,Supplier\n';
+      let csv = 'SKU,Component Name,Category,Available Qty,In Use Qty,Total Qty,Unit,Cost (â‚¹),Price (â‚¹),Total Asset Value (â‚¹),Warehouse,Supplier\n';
       state.components.forEach(c => {
         const val = (c.totalQty * (c.price || 0)).toFixed(2);
         csv += `"${c.sku}","${c.name}","${c.category}",${c.spareQty},${c.inUseQty},${c.totalQty},"${c.unit}",${c.cost || 0},${c.price || 0},${val},"${getWarehouseName(c.warehouseId)}","${c.supplier || ''}"\n`;
@@ -3420,9 +3553,9 @@
     }
 
     function exportLedgerCSV() {
-      let csv = 'S.No,Date,SKU,Component Name,Qty Change,Action,Reason / Reference,Project Context,Warehouse Location\n';
+      let csv = 'S.No,Date,SKU,Component Name,Qty Change,Action,Reason / Reference,Project Context,Assigned By,Assigned To,Warehouse Location\n';
       state.stockHistory.forEach(h => {
-        csv += `${h.sNo},"${h.date}","${h.sku || ''}","${h.componentName}",${h.qty},"${h.action}","${h.reason || ''}","${h.projectName || ''}","${h.warehouseName || ''}"\n`;
+        csv += `${h.sNo},"${h.date}","${h.sku || ''}","${h.componentName}",${h.qty},"${h.action}","${h.reason || ''}","${h.projectName || ''}","${h.assignedBy || ''}","${h.assignedTo || ''}","${h.warehouseName || ''}"\n`;
       });
       downloadFile(csv, 'Inven3_Transaction_Ledger.csv', 'text/csv');
       triggerToast("Audit Ledger exported to CSV!");
@@ -3518,7 +3651,7 @@
               </button>
               <div class="low-stock-body" id="low-stock-body" style="display:none;">
                 <div style="padding:12px 16px;border-bottom:1px solid #fecdd3;display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:12px;color:#be123c;font-weight:600;">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock &nbsp;•&nbsp; ${lowStockItems.filter(i=>i.spareQty>0).length} critically low</span>
+                  <span style="font-size:12px;color:#be123c;font-weight:600;">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock &nbsp;â€¢&nbsp; ${lowStockItems.filter(i=>i.spareQty>0).length} critically low</span>
                   <button class="btn btn-secondary" style="border-color:#fecdd3;color:#9f1239;font-size:12px;padding:5px 12px;" onclick="filterLowStockView()">
                     <i data-lucide="eye" style="width:13px;"></i> View All
                   </button>
@@ -3532,7 +3665,7 @@
                         <span style="font-size:11px;color:#9f1239;background:#fef2f2;padding:2px 7px;border-radius:10px;">${item.category}</span>
                       </div>
                       <span style="font-size:12px;font-weight:700;color:${item.spareQty===0?'#e11d48':'#f97316'};min-width:60px;text-align:right;">
-                        ${item.spareQty === 0 ? '🔴 Out of stock' : item.spareQty + ' left'}
+                        ${item.spareQty === 0 ? 'ðŸ”´ Out of stock' : item.spareQty + ' left'}
                       </span>
                     </div>
                   `).join('')}
@@ -3545,12 +3678,12 @@
           <div class="metrics-grid">
             <div class="metric-card">
               <div class="metric-icon-box purple">
-                <i data-lucide="indian-rupee"></i>
+                <i data-lucide="layers"></i>
               </div>
               <div class="metric-details">
-                <span class="metric-label">Asset Valuation</span>
-                <span class="metric-value">₹${totalInventoryValuation.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span class="metric-trend trend-up"><i data-lucide="trending-up" style="width:12px;"></i> Cost: ₹${totalInventoryCost.toFixed(0)}</span>
+                <span class="metric-label">Total In-Use</span>
+                <span class="metric-value">${state.components.reduce((s,c)=>s+(c.inUseQty||0),0)}</span>
+                <span class="metric-trend trend-up"><i data-lucide="git-branch" style="width:12px;"></i> Across ${state.projects.filter(p=>p.status==='Active').length} projects</span>
               </div>
             </div>
 
@@ -3570,7 +3703,7 @@
                 <i data-lucide="package-check"></i>
               </div>
               <div class="metric-details">
-                <span class="metric-label">Spare Stock</span>
+                <span class="metric-label">Available Stock</span>
                 <span class="metric-value">${totalHardwareSpareCount}</span>
                 <span class="metric-trend trend-up"><i data-lucide="check-circle" style="width:12px;"></i> In Stock</span>
               </div>
@@ -3640,7 +3773,7 @@
                     <tr>
                       <th>Component</th>
                       <th>Health</th>
-                      <th>Spare</th>
+                      <th>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3651,7 +3784,7 @@
                           <span class="sku-pill">${comp.sku}</span>
                         </td>
                         <td>${getStockHealthBadge(comp)}</td>
-                        <td><strong style="color:var(--color-accent-teal);">${comp.spareQty}</strong></td>
+                        <td><strong style="color:var(--color-accent-teal);">${comp.totalQty}</strong></td>
                       </tr>
                     `).join('')}
                     ${filteredComponents.length === 0 ? '<tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--color-text-muted);">No parts cataloged.</td></tr>' : ''}
@@ -3686,7 +3819,7 @@
                         : h.action.includes('Assigned') ? '#7c3aed'
                         : '#2563eb';
                       const sign = h.action.includes('In') || h.action === 'Added' || h.action === 'Returned from Project' ? '+' :
-                        h.action.includes('Out') || h.action === 'Removed' ? '-' : '±';
+                        h.action.includes('Out') || h.action === 'Removed' ? '-' : 'Â±';
                       return `<tr>
                         <td style="font-size:12px;color:var(--color-text-muted);">${h.date || ''}</td>
                         <td><div style="font-weight:600;font-size:13px;">${h.componentName || ''}</div><span class="sku-pill" style="font-size:10px;">${h.sku || ''}</span></td>
@@ -3771,10 +3904,10 @@
 
         // Sort icon helper
         function sortIcon(field) {
-          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">⇅</span>';
+          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">â‡…</span>';
           return state.sortDir === 'asc'
-            ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▲</span>'
-            : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">▼</span>';
+            ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">â–²</span>'
+            : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">â–¼</span>';
         }
         function sortTh(field, label) {
           const active = state.sortField === field;
@@ -3785,7 +3918,7 @@
         // Row HTML builder
         function buildRows(items) {
           if (!items.length) {
-            return `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--color-text-muted);">
+            return `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--color-text-muted);">
               <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                 <div>No components match the current search or filters.</div>
                 <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
@@ -3796,7 +3929,6 @@
             const health = getStockHealthBadge(comp);
             const whName = getWarehouseName(comp.warehouseId);
             const price = (comp.price || 0).toFixed(2);
-            const spareQty = comp.spareQty !== undefined ? comp.spareQty : 0;
             const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
             const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
             return `<tr>
@@ -3810,10 +3942,9 @@
               <td><span class="cat-badge" style="background:rgba(100,100,100,0.08);color:${catColor};border:1px solid rgba(100,100,100,0.15);">${comp.category || 'Other'}</span></td>
               <td><span style="font-size:12.5px;color:var(--color-text-muted);">${whName}</span></td>
               <td>${health}</td>
-              <td><strong style="color:var(--color-accent-teal);">${spareQty}</strong></td>
               <td><strong style="color:var(--color-accent-amber);">${inUseQty}</strong></td>
               <td><strong>${totalQty} ${comp.unit || 'pcs'}</strong></td>
-              <td>₹${price}</td>
+              <td>â‚¹${price}</td>
               <td>
                 <div class="qty-assign-container">
                   <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
@@ -3845,7 +3976,7 @@
             if (i === 1 || i === totalPages || (i >= state.compPage - range && i <= state.compPage + range)) {
               pages += `<button class="btn btn-secondary" style="min-width:36px;padding:6px 10px;${i === state.compPage ? 'background:var(--color-accent-purple);color:#fff;border-color:var(--color-accent-purple);' : ''}" onclick="state.compPage=${i};render();">${i}</button>`;
             } else if (i === state.compPage - range - 1 || i === state.compPage + range + 1) {
-              pages += `<span style="padding:0 4px;color:var(--color-text-muted);">…</span>`;
+              pages += `<span style="padding:0 4px;color:var(--color-text-muted);">â€¦</span>`;
             }
           }
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px;flex-wrap:wrap;gap:8px;">
@@ -3853,9 +3984,9 @@
               Showing <strong>${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;render();">← Prev</button>
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;render();">â† Prev</button>
               ${pages}
-              <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;render();">Next →</button>
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;render();">Next â†’</button>
             </div>
           </div>`;
         }
@@ -3921,10 +4052,9 @@
                       ${sortTh('category', 'Category')}
                       <th>Warehouse</th>
                       <th>Health Status</th>
-                      ${sortTh('spare', 'Spare')}
                       ${sortTh('inuse', 'In Use')}
                       ${sortTh('total', 'Total')}
-                      ${sortTh('price', 'Price (₹)')}
+                      ${sortTh('price', 'Price (â‚¹)')}
                       <th>Quick Actions</th>
                       <th>Actions</th>
                     </tr>
@@ -4011,9 +4141,6 @@
             </div>
             
             <div style="display:flex; gap:10px;">
-              <button class="btn btn-secondary" onclick="openRegisterOnProject('${proj.id}')">
-                <i data-lucide="plus"></i> Add New Component
-              </button>
               <button class="btn btn-secondary" style="color:var(--color-accent-rose); border-color:rgba(225,29,72,0.2);" onclick="deleteProject('${proj.id}')">
                 <i data-lucide="trash-2"></i> Delete Project
               </button>
@@ -4021,25 +4148,13 @@
           </div>
 
           <div class="content-panel">
-            <div class="tab-header">
-              <button class="tab-btn active" id="tab-btn-in-use" onclick="switchDetailTab('in-use')">
-                In Use (${(proj.usedComponents || []).length})
-              </button>
-              <button class="tab-btn" id="tab-btn-spare" onclick="switchDetailTab('spare')">
-                Spare Registry
-              </button>
-            </div>
-
-            <!-- Tab Content 1: In Use -->
-            <div class="tab-content active" id="tab-content-in-use">
-              <div class="table-container">
+            <div class="table-container">
                 <table>
                   <thead>
                     <tr>
                       <th>Component & SKU</th>
                       <th>Category</th>
                       <th>Quantity Assigned</th>
-                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4058,58 +4173,10 @@
                             </span>
                           </td>
                           <td><strong>${uc.qty} ${comp.unit}</strong></td>
-                          <td>
-                            <div class="qty-assign-container">
-                              <input type="number" class="qty-input" id="qty-return-${comp.id}" min="1" max="${uc.qty}" value="1">
-                              <button class="btn-action-sm secondary" onclick="returnFromProject('${proj.id}', '${comp.id}', 'qty-return-${comp.id}')">Return to Spare</button>
-                            </div>
-                          </td>
                         </tr>
                       `;
                     }).join('')}
-                    ${(proj.usedComponents || []).length === 0 ? '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project. Switch to "Spare Registry" tab to provision hardware.</td></tr>' : ''}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Tab Content 2: Spare Registry -->
-            <div class="tab-content" id="tab-content-spare">
-              <div class="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Component & SKU</th>
-                      <th>Category</th>
-                      <th>Available Spare</th>
-                      <th>Assign Quantity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${state.components.map(comp => `
-                      <tr>
-                        <td>
-                          <div style="font-weight: 600;">${comp.name}</div>
-                          <span class="sku-pill">${comp.sku}</span>
-                        </td>
-                        <td>
-                          <span class="cat-badge" style="background-color:${getCategoryColor(comp.category)}15; color:${getCategoryColor(comp.category)};">
-                            ${comp.category}
-                          </span>
-                        </td>
-                        <td>
-                          <strong style="color: ${comp.spareQty > 0 ? 'var(--color-accent-teal)' : 'var(--color-accent-rose)'};">
-                            ${comp.spareQty} ${comp.unit}
-                          </strong>
-                        </td>
-                        <td>
-                          <div class="qty-assign-container">
-                            <input type="number" class="qty-input" id="qty-assign-${comp.id}" min="1" max="${comp.spareQty}" value="1" ${comp.spareQty === 0 ? 'disabled' : ''}>
-                            <button class="btn-action-sm" onclick="assignToProject('${proj.id}', '${comp.id}', 'qty-assign-${comp.id}')" ${comp.spareQty === 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>Assign</button>
-                          </div>
-                        </td>
-                      </tr>
-                    `).join('')}
+                    ${(proj.usedComponents || []).length === 0 ? '<tr><td colspan="3" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project. Use Stock Out → Link to Project or the Components view to assign hardware.</td></tr>' : ''}
                   </tbody>
                 </table>
               </div>
@@ -4170,7 +4237,7 @@
                     </div>
                     <div>
                       <div style="font-size:11px; color:var(--color-text-muted);">Value</div>
-                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">₹${totalVal.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">â‚¹${totalVal.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
                     </div>
                   </div>
 
@@ -4186,14 +4253,12 @@
 
       // 6. REPORTS & VALUATION VIEW
       else if (state.currentView === 'reports') {
-        const potentialProfit = totalInventoryValuation - totalInventoryCost;
-        const marginPct = totalInventoryValuation > 0 ? ((potentialProfit / totalInventoryValuation) * 100).toFixed(1) : 0;
 
         container.innerHTML = `
           <div class="view-header">
             <div class="view-title-wrap">
-              <h2>Inventory Reports & Valuation Analytics</h2>
-              <div class="view-subtitle">Financial audit, asset distribution, and 1-click CSV data export.</div>
+              <h2>Inventory Reports & Analytics</h2>
+              <div class="view-subtitle">Stock distribution, category breakdown, and 1-click CSV data export.</div>
             </div>
             <div class="header-actions-group">
               <button class="btn btn-secondary" onclick="exportCatalogCSV()">
@@ -4207,21 +4272,21 @@
 
           <div class="reports-stats-grid">
             <div class="report-card">
-              <span class="metric-label">Total Inventory Valuation</span>
-              <span class="metric-value" style="color:var(--color-accent-teal);">₹${totalInventoryValuation.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span style="font-size:12px; color:var(--color-text-muted);">Calculated across ${totalUniqueParts} registered SKUs</span>
+              <span class="metric-label">Total SKUs Registered</span>
+              <span class="metric-value" style="color:var(--color-accent-teal);">${totalUniqueParts}</span>
+              <span style="font-size:12px; color:var(--color-text-muted);">Unique components in catalog</span>
             </div>
 
             <div class="report-card">
-              <span class="metric-label">Total Acquisition Cost</span>
-              <span class="metric-value">₹${totalInventoryCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span style="font-size:12px; color:var(--color-text-muted);">Procured hardware cost basis</span>
+              <span class="metric-label">Total Units (All Stock)</span>
+              <span class="metric-value">${totalItemsCount}</span>
+              <span style="font-size:12px; color:var(--color-text-muted);">Across ${state.warehouses.length} warehouse location${state.warehouses.length !== 1 ? 's' : ''}</span>
             </div>
 
             <div class="report-card">
-              <span class="metric-label">Gross Margin Potential</span>
-              <span class="metric-value" style="color:var(--color-accent-purple);">${marginPct}% (₹${potentialProfit.toFixed(2)})</span>
-              <span style="font-size:12px; color:var(--color-text-muted);">Mark-up spread across catalog</span>
+              <span class="metric-label">Low Stock Items</span>
+              <span class="metric-value" style="color:${lowStockItems.length > 0 ? 'var(--color-accent-rose)' : 'var(--color-accent-emerald)'}">${lowStockItems.length}</span>
+              <span style="font-size:12px; color:var(--color-text-muted);">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock, ${lowStockItems.filter(i=>i.spareQty>0).length} running low</span>
             </div>
           </div>
 
@@ -4236,7 +4301,7 @@
                     <th>Category</th>
                     <th>SKU Count</th>
                     <th>Total Units</th>
-                    <th>Total Valuation (₹)</th>
+                    <th>Total Valuation (â‚¹)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -4255,7 +4320,7 @@
                         </td>
                         <td><strong>${items.length}</strong></td>
                         <td>${units}</td>
-                        <td><strong>₹${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+                        <td><strong>â‚¹${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
                         <td>
                           <button class="btn-action-sm secondary" onclick="state.currentView='components'; state.compCatFilter='${cat.name}'; state.compPage=1; render();">
                             View Items
@@ -4273,17 +4338,22 @@
 
       // 7. STOCK HISTORY LEDGER VIEW
       else if (state.currentView === 'history') {
-        const historySearch = document.getElementById('history-search')?.value.toLowerCase() || '';
+        const historySearch = (document.getElementById('history-search')?.value || '').toLowerCase().trim();
 
-        const sortedHistory = [...state.stockHistory]
-          .filter(h => 
-            h.componentName.toLowerCase().includes(historySearch) || 
-            (h.sku && h.sku.toLowerCase().includes(historySearch)) ||
-            (h.action && h.action.toLowerCase().includes(historySearch)) ||
-            (h.reason && h.reason.toLowerCase().includes(historySearch)) ||
-            (h.projectName && h.projectName.toLowerCase().includes(historySearch))
-          )
-          .sort((a, b) => b.sNo - a.sNo);
+        const sortedHistory = (Array.isArray(state.stockHistory) ? [...state.stockHistory] : [])
+          .filter(h => {
+            if (!h) return false;
+            if (!historySearch) return true;
+            return (h.componentName && h.componentName.toLowerCase().includes(historySearch)) || 
+                   (h.sku && h.sku.toLowerCase().includes(historySearch)) ||
+                   (h.action && h.action.toLowerCase().includes(historySearch)) ||
+                   (h.reason && h.reason.toLowerCase().includes(historySearch)) ||
+                   (h.projectName && h.projectName.toLowerCase().includes(historySearch)) ||
+                   (h.warehouseName && h.warehouseName.toLowerCase().includes(historySearch)) ||
+                   (h.assignedBy && h.assignedBy.toLowerCase().includes(historySearch)) ||
+                   (h.assignedTo && h.assignedTo.toLowerCase().includes(historySearch));
+          })
+          .sort((a, b) => (Number(b && b.sNo) || 0) - (Number(a && a.sNo) || 0));
 
         container.innerHTML = `
           <div class="view-header">
@@ -4320,6 +4390,8 @@
                     <th>Transaction Type</th>
                     <th>Reason / Reference</th>
                     <th>Project / Destination</th>
+                    <th>Assigned By</th>
+                    <th>Assigned To</th>
                     <th>Warehouse</th>
                   </tr>
                 </thead>
@@ -4333,7 +4405,19 @@
                     else if (entry.action === 'Assigned to Project') actionBadge = '<span style="color:#2563eb; font-weight:700;"><i data-lucide="arrow-right-left" style="width:13px; vertical-align:middle;"></i> Assigned</span>';
                     else if (entry.action === 'Returned from Project') actionBadge = '<span style="color:#b45309; font-weight:700;"><i data-lucide="corner-down-left" style="width:13px; vertical-align:middle;"></i> Returned</span>';
                     else if (entry.action === 'Transferred') actionBadge = '<span style="color:#7c3aed; font-weight:700;"><i data-lucide="repeat" style="width:13px; vertical-align:middle;"></i> Transfer</span>';
-                    
+
+                    const assignedByCell = entry.assignedBy
+                      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;background:rgba(124,58,237,0.08);color:#7c3aed;padding:2px 8px;border-radius:20px;border:1px solid rgba(124,58,237,0.18);">
+                           <i data-lucide="user" style="width:11px;height:11px;"></i>${entry.assignedBy}
+                         </span>`
+                      : '<span style="color:var(--color-text-muted);font-size:12px;">—</span>';
+
+                    const assignedToCell = entry.assignedTo
+                      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;background:rgba(13,148,136,0.08);color:#0d9488;padding:2px 8px;border-radius:20px;border:1px solid rgba(13,148,136,0.18);">
+                           <i data-lucide="user-check" style="width:11px;height:11px;"></i>${entry.assignedTo}
+                         </span>`
+                      : '<span style="color:var(--color-text-muted);font-size:12px;">—</span>';
+
                     return `
                       <tr>
                         <td>#${entry.sNo}</td>
@@ -4346,11 +4430,13 @@
                         <td>${actionBadge}</td>
                         <td><span style="font-size:12.5px; color:var(--color-text-muted);">${entry.reason || '—'}</span></td>
                         <td><span style="font-size:13px;">${entry.projectName || '—'}</span></td>
+                        <td>${assignedByCell}</td>
+                        <td>${assignedToCell}</td>
                         <td><span style="font-size:12px; color:var(--color-text-muted);">${entry.warehouseName || '—'}</span></td>
                       </tr>
                     `;
                   }).join('')}
-                  ${sortedHistory.length === 0 ? '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No transaction logs recorded.</td></tr>' : ''}
+                  ${sortedHistory.length === 0 ? '<tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No transaction logs recorded.</td></tr>' : ''}
                 </tbody>
               </table>
             </div>
@@ -4360,6 +4446,113 @@
 
       // Re-trigger icon rendering
       lucide.createIcons();
+    }
+
+    // ── Add Existing Component to Project ─────────────────────────────────
+    let _addToProjectId = null;
+
+    function openAddComponentToProject(projectId) {
+      _addToProjectId = projectId;
+      const proj = state.projects.find(p => p.id === projectId);
+      const select = document.getElementById('add-to-proj-component');
+      const warning = document.getElementById('add-to-proj-warning');
+      if (!select) return;
+
+      // Only show components that have spare stock
+      const available = state.components.filter(c => (c.spareQty || 0) > 0);
+
+      if (available.length === 0) {
+        triggerToast('No components with stock available!', true);
+        return;
+      }
+
+      select.innerHTML = available.map(c =>
+        `<option value="${c.id}" data-spare="${c.spareQty}" data-unit="${c.unit || 'pcs'}">${c.name} (${c.sku}) — Available: ${c.spareQty} ${c.unit || 'pcs'}</option>`
+      ).join('');
+
+      // Show warning if component already in project
+      if (warning) warning.style.display = 'none';
+      updateAddToProjectQtyMax();
+      openModal('add-to-project');
+    }
+
+    function updateAddToProjectQtyMax() {
+      const select    = document.getElementById('add-to-proj-component');
+      const qtyInput  = document.getElementById('add-to-proj-qty');
+      const spareInfo = document.getElementById('add-to-proj-spare-info');
+      const warning   = document.getElementById('add-to-proj-warning');
+      if (!select || !qtyInput || !spareInfo) return;
+
+      const selected = select.options[select.selectedIndex];
+      if (!selected) return;
+      const spare = parseInt(selected.getAttribute('data-spare') || '0');
+      const unit  = selected.getAttribute('data-unit') || 'pcs';
+      const compId = selected.value;
+
+      qtyInput.max   = spare;
+      qtyInput.value = Math.min(parseInt(qtyInput.value) || 1, spare);
+
+      spareInfo.textContent   = `${spare} ${unit} available`;
+      spareInfo.style.color   = spare > 5 ? 'var(--color-accent-teal)'
+                              : spare > 0 ? 'var(--color-accent-amber)'
+                              : 'var(--color-accent-rose)';
+
+      // Warn if already assigned to this project
+      if (warning && _addToProjectId) {
+        const proj = state.projects.find(p => p.id === _addToProjectId);
+        const alreadyIn = proj && (proj.usedComponents || []).find(uc => uc.componentId === compId);
+        if (alreadyIn) {
+          warning.style.display = 'block';
+          warning.textContent = `⚠️ This component is already assigned to this project (${alreadyIn.qty} ${unit}). Adding more will increase the total.`;
+        } else {
+          warning.style.display = 'none';
+        }
+      }
+    }
+
+    function submitAddComponentToProject() {
+      const compId = document.getElementById('add-to-proj-component').value;
+      const qty    = parseInt(document.getElementById('add-to-proj-qty').value) || 0;
+      const projId = _addToProjectId;
+
+      if (!compId || !projId) { triggerToast('Invalid selection.', true); return; }
+      if (qty <= 0)            { triggerToast('Please enter a quantity greater than 0.', true); return; }
+
+      const comp = state.components.find(c => c.id === compId);
+      const proj = state.projects.find(p => p.id === projId);
+
+      if (!comp || !proj) { triggerToast('Component or project not found.', true); return; }
+
+      if ((comp.spareQty || 0) < qty) {
+        triggerToast(`Insufficient stock! Only ${comp.spareQty || 0} ${comp.unit || 'pcs'} available.`, true);
+        return;
+      }
+
+      comp.spareQty  -= qty;
+      comp.inUseQty  += qty;
+
+      if (!proj.usedComponents) proj.usedComponents = [];
+      const existing = proj.usedComponents.find(uc => uc.componentId === compId);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        proj.usedComponents.push({ componentId: compId, qty });
+      }
+
+      addStockHistoryEntry({
+        sku:           comp.sku,
+        componentName: comp.name,
+        qty:           qty,
+        action:        'Assigned to Project',
+        reason:        'Manual Component Addition',
+        projectName:   proj.name,
+        warehouseName: getWarehouseName(comp.warehouseId)
+      });
+
+      saveState();
+      closeModal('add-to-project');
+      triggerToast(`✅ Assigned ${qty} × "${comp.name}" to ${proj.name}.`);
+      render();
     }
 
     // Initialize the app on load
