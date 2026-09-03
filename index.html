@@ -1803,6 +1803,9 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- Firebase Configuration (git-ignored for security) -->
+  <script src="firebase-config.js"></script>
+
   <!-- APPLICATION JAVASCRIPT ENGINE -->
   <script>
     // Global Application State
@@ -1884,17 +1887,19 @@
     };
 
     // ── FIREBASE REAL-TIME CONFIG ─────────────────────────────────
-    // NOTE: For production, move these to firebase-config.js and add to .gitignore
-    const FIREBASE_DB_URL = "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const FIREBASE_CONFIG = {
-      apiKey:            "AIzaSyCG5xzCaSJAvmWWFhVD2QYnP8SfyI-TVZM",
+    // Dynamically loaded from external firebase-config.js (git-ignored)
+    const FIREBASE_CONFIG = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : {
+      apiKey:            "",
       authDomain:        "ggmaad-inventory-management.firebaseapp.com",
-      databaseURL:       FIREBASE_DB_URL,
+      databaseURL:       "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId:         "ggmaad-inventory-management",
       storageBucket:     "ggmaad-inventory-management.firebasestorage.app",
       messagingSenderId: "1087958945040",
       appId:             "1:1087958945040:web:d8d5468aace354d2e22995"
     };
+    const FIREBASE_DB_URL = (typeof window !== 'undefined' && window.FIREBASE_DB_URL) 
+      ? window.FIREBASE_DB_URL 
+      : FIREBASE_CONFIG.databaseURL;
 
     let fbWriteDebounce    = null;
     let fbDataLoaded       = false;  // true once Firebase sends us real data

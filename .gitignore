@@ -9,3 +9,11 @@ playwright/.cache/
 *.csv
 *.xlsx
 firebase_inventory.json
+
+# Environment & Private Configuration
+firebase-config.js
+.env
+.env.*
+*.env
+.env.local
+

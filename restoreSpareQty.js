@@ -20,15 +20,20 @@
 const { initializeApp } = require('firebase/app');
 const { getDatabase, ref, get, set } = require('firebase/database');
 
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyCG5xzCaSJAvmWWFhVD2QYnP8SfyI-TVZM",
-  authDomain:        "ggmaad-inventory-management.firebaseapp.com",
-  databaseURL:       "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "ggmaad-inventory-management",
-  storageBucket:     "ggmaad-inventory-management.firebasestorage.app",
-  messagingSenderId: "1087958945040",
-  appId:             "1:1087958945040:web:d8d5468aace354d2e22995"
-};
+let FIREBASE_CONFIG;
+try {
+  FIREBASE_CONFIG = require('./firebase-config.js').FIREBASE_CONFIG;
+} catch (e) {
+  FIREBASE_CONFIG = {
+    apiKey:            process.env.FIREBASE_API_KEY || "",
+    authDomain:        "ggmaad-inventory-management.firebaseapp.com",
+    databaseURL:       process.env.FIREBASE_DATABASE_URL || "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "ggmaad-inventory-management",
+    storageBucket:     "ggmaad-inventory-management.firebasestorage.app",
+    messagingSenderId: "1087958945040",
+    appId:             "1:1087958945040:web:d8d5468aace354d2e22995"
+  };
+}
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db  = getDatabase(app);
