@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>GG MAAD Inventory — Enterprise IoT Inventory Management ERP</title>
+  <title>GG MAAD Inventory &mdash; Enterprise IoT Inventory Management ERP</title>
   
   <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -843,7 +843,7 @@
       vertical-align: middle;
     }
 
-    /* Component name cell — clamp to single line with ellipsis */
+    /* Component name cell &mdash; clamp to single line with ellipsis */
     .comp-name-cell {
       max-width: 220px;
       white-space: nowrap;
@@ -1310,7 +1310,7 @@
       gap: 8px;
     }
 
-    /* ── Real-Time Sync Status UI ────────────────────────────────────── */
+    /* &acirc;&acirc; Real-Time Sync Status UI &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc; */
     .sync-status-pill {
       display: flex;
       align-items: center;
@@ -1434,6 +1434,12 @@
               Stock History
             </div>
           </li>
+          <li>
+            <div id="nav-ledger" class="nav-item" onclick="switchView('ledger')">
+              <i data-lucide="book-open"></i>
+              Ledger
+            </div>
+          </li>
         </ul>
       </nav>
     </div>
@@ -1452,12 +1458,12 @@
       </div>
 
       <div class="top-right">
-        <!-- ── Real-Time Sync Status Pill ── -->
+        <!-- &acirc;&acirc; Real-Time Sync Status Pill &acirc;&acirc; -->
         <div class="sync-status-pill" id="sync-status-pill" title="Firebase real-time sync status">
           <div class="sync-dot syncing" id="sync-dot"></div>
           <span id="sync-status-text">Connecting...</span>
         </div>
-        <!-- ── Online Devices Badge ── -->
+        <!-- &acirc;&acirc; Online Devices Badge &acirc;&acirc; -->
         <div class="online-users-badge" id="online-users-badge" style="display:none;" title="Active sessions across all devices">
           <div class="online-dot"></div>
           <span id="online-users-count">1 online</span>
@@ -1547,31 +1553,42 @@
 
   <!-- 2. Quick Stock In (Purchase / Receiving) Modal -->
   <div class="modal-backdrop" id="modal-stock-in">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width:600px;">
       <div class="modal-header">
-        <h3>Stock In — Purchase & Receiving</h3>
+        <h3>Stock In &mdash; Purchase &amp; Receiving</h3>
         <button class="btn-close-modal" onclick="closeModal('stock-in')">
           <i data-lucide="x"></i>
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label for="stock-in-component">Select Component</label>
-          <select id="stock-in-component"></select>
-        </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="stock-in-qty">Quantity Received *</label>
-            <input type="number" id="stock-in-qty" min="1" value="10">
+            <label for="stock-in-warehouse">Warehouse / Bay</label>
+            <select id="stock-in-warehouse" onchange="populateStockInList()"></select>
           </div>
           <div class="form-group">
-            <label for="stock-in-warehouse">Warehouse / Bay</label>
-            <select id="stock-in-warehouse"></select>
+            <label for="stock-in-po">PO / Supplier Reference</label>
+            <input type="text" id="stock-in-po" placeholder="e.g., PO-2026-884">
           </div>
         </div>
         <div class="form-group">
-          <label for="stock-in-po">PO Number / Supplier Reference</label>
-          <input type="text" id="stock-in-po" placeholder="e.g., PO-2026-884, Mouser Inbound">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label style="margin:0;">Select Products to Receive</label>
+            <div style="display:flex;gap:6px;">
+              <input type="text" id="stock-in-search" placeholder="Search..." oninput="populateStockInList()" style="padding:5px 10px;border:1px solid var(--color-border);border-radius:8px;font-size:12px;background:var(--color-bg);color:var(--color-text);width:140px;">
+              <button type="button" class="btn btn-secondary" style="padding:4px 12px;font-size:12px;" onclick="stockInSelectAll()">Select All</button>
+            </div>
+          </div>
+          <div id="stock-in-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--color-border);border-radius:10px;padding:6px;background:var(--color-surface);">
+            <div style="color:var(--color-text-muted);font-size:13px;padding:12px;text-align:center;">Loading components...</div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:12px;padding:14px 16px;margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;font-weight:600;color:#15803d;">Total Purchase Value</span>
+            <span id="stock-in-total" style="font-size:18px;font-weight:800;color:#166534;">&#8377; 0.00</span>
+          </div>
+          <div style="font-size:11px;color:#4ade80;margin-top:2px;">Sum of (Qty &times; Unit Price) for all selected items</div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1583,23 +1600,15 @@
 
   <!-- 3. Quick Stock Out (Sales / Dispatch / Scrap) Modal -->
   <div class="modal-backdrop" id="modal-stock-out">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width:620px;">
       <div class="modal-header">
-        <h3>Stock Out — Sales, Dispatch & Scrap</h3>
+        <h3>Stock Out &mdash; Sales, Dispatch &amp; Scrap</h3>
         <button class="btn-close-modal" onclick="closeModal('stock-out')">
           <i data-lucide="x"></i>
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label for="stock-out-component">Select Component</label>
-          <select id="stock-out-component"></select>
-        </div>
         <div class="form-row">
-          <div class="form-group">
-            <label for="stock-out-qty">Quantity Dispatched *</label>
-            <input type="number" id="stock-out-qty" min="1" value="1">
-          </div>
           <div class="form-group">
             <label for="stock-out-reason">Transaction Type</label>
             <select id="stock-out-reason">
@@ -1609,12 +1618,24 @@
               <option value="Loaned">External Loan</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="stock-out-project">Link to Project <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(optional)</span></label>
+            <select id="stock-out-project">
+              <option value="">&mdash; None / No Project &mdash;</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
-          <label for="stock-out-project">Link to Project <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(optional)</span></label>
-          <select id="stock-out-project">
-            <option value="">— None / No Project —</option>
-          </select>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label style="margin:0;">Select Products to Dispatch</label>
+            <div style="display:flex;gap:6px;">
+              <input type="text" id="stock-out-search" placeholder="Search..." oninput="populateStockOutList()" style="padding:5px 10px;border:1px solid var(--color-border);border-radius:8px;font-size:12px;background:var(--color-bg);color:var(--color-text);width:140px;">
+              <button type="button" class="btn btn-secondary" style="padding:4px 12px;font-size:12px;" onclick="stockOutSelectAll()">Select All</button>
+            </div>
+          </div>
+          <div id="stock-out-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--color-border);border-radius:10px;padding:6px;background:var(--color-surface);">
+            <div style="color:var(--color-text-muted);font-size:13px;padding:12px;text-align:center;">Loading components...</div>
+          </div>
         </div>
         <div class="form-group">
           <label for="stock-out-ref">Order / Dispatch Reference</label>
@@ -1622,12 +1643,12 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="stock-out-assigned-by">Assigned By <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Issuer's name)</span></label>
-            <input type="text" id="stock-out-assigned-by" placeholder="e.g., Shashank, Dr. Elena" autocomplete="off">
+            <label for="stock-out-assigned-by">Assigned By <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Issuer)</span></label>
+            <input type="text" id="stock-out-assigned-by" placeholder="e.g., Shashank" autocomplete="off">
           </div>
           <div class="form-group">
-            <label for="stock-out-assigned-to">Assigned To <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Recipient / Destination)</span></label>
-            <input type="text" id="stock-out-assigned-to" placeholder="e.g., Aqua Sense Team, Client ABC" autocomplete="off">
+            <label for="stock-out-assigned-to">Assigned To <span style="font-size:11px;color:var(--color-text-muted);font-weight:400;">(Recipient)</span></label>
+            <input type="text" id="stock-out-assigned-to" placeholder="e.g., Client ABC" autocomplete="off">
           </div>
         </div>
       </div>
@@ -1640,7 +1661,7 @@
 
   <!-- 4. Inter-Warehouse Stock Transfer Modal -->
   <div class="modal-backdrop" id="modal-stock-transfer">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width:560px;">
       <div class="modal-header">
         <h3>Inter-Warehouse Stock Transfer</h3>
         <button class="btn-close-modal" onclick="closeModal('stock-transfer')">
@@ -1648,14 +1669,10 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label for="transfer-component">Select Component</label>
-          <select id="transfer-component"></select>
-        </div>
         <div class="form-row">
           <div class="form-group">
             <label for="transfer-source">From Warehouse</label>
-            <select id="transfer-source"></select>
+            <select id="transfer-source" onchange="populateTransferComponentList()"></select>
           </div>
           <div class="form-group">
             <label for="transfer-target">To Warehouse</label>
@@ -1663,8 +1680,13 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="transfer-qty">Quantity to Transfer *</label>
-          <input type="number" id="transfer-qty" min="1" value="5">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label style="margin:0;">Select Components to Transfer</label>
+            <button type="button" class="btn btn-secondary" style="padding:4px 12px;font-size:12px;" onclick="transferSelectAll()">Select All</button>
+          </div>
+          <div id="transfer-component-list" style="max-height:240px;overflow-y:auto;border:1px solid var(--color-border);border-radius:10px;padding:8px;background:var(--color-surface);">
+            <div style="color:var(--color-text-muted);font-size:13px;padding:8px;">Select a source warehouse to see components.</div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1786,7 +1808,7 @@
           <div class="form-group">
             <label>Available Stock</label>
             <div id="add-to-proj-spare-info"
-              style="padding:9px 13px;background:#f3f0ea;border-radius:8px;font-size:14px;font-weight:700;color:var(--color-accent-teal);border:1px solid #eae5dc;">—</div>
+              style="padding:9px 13px;background:#f3f0ea;border-radius:8px;font-size:14px;font-weight:700;color:var(--color-accent-teal);border:1px solid #eae5dc;">&mdash;</div>
           </div>
         </div>
         <div id="add-to-proj-warning" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#c2410c;font-weight:600;"></div>
@@ -1800,8 +1822,56 @@
     </div>
   </div>
 
+  <!-- Edit Ledger Entry Modal -->
+  <div class="modal-backdrop" id="modal-edit-ledger">
+    <div class="modal-card" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Edit Ledger Entry</h3>
+        <button class="btn-close-modal" onclick="closeModal('edit-ledger')">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-ledger-sno">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" id="edit-ledger-name" placeholder="Component name">
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="edit-ledger-date">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="edit-ledger-qty" min="1">
+          </div>
+          <div class="form-group">
+            <label>Unit Price (&#8377;)</label>
+            <input type="number" id="edit-ledger-unit-price" min="0" step="0.01" placeholder="0.00" oninput="calcEditLedgerTotal()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Total Value</label>
+          <div id="edit-ledger-total" style="padding:10px 14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:10px;font-weight:700;font-size:15px;color:#15803d;min-height:42px;display:flex;align-items:center;">&#8377; 0.00</div>
+        </div>
+        <div class="form-group">
+          <label>Reference / PO Number</label>
+          <input type="text" id="edit-ledger-reason" placeholder="PO number or notes">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('edit-ledger')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditLedgerEntry()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
+
 
   <!-- Firebase Configuration (git-ignored for security) -->
   <script src="firebase-config.js"></script>
@@ -1821,7 +1891,8 @@
       compSearchQuery: '',
       filterLowStockOnly: false,
       sortField: 'name',
-      sortDir: 'asc'
+      sortDir: 'asc',
+      ledgerFilter: 'all'
     };
 
     // Default Rich Mock Dataset
@@ -1886,9 +1957,9 @@
       ]
     };
 
-    // ── FIREBASE REAL-TIME CONFIG ─────────────────────────────────
+    // &acirc;&acirc; FIREBASE REAL-TIME CONFIG &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;
     // Dynamically loaded from external firebase-config.js (git-ignored)
-    const FIREBASE_CONFIG = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : {
+    const activeFirebaseConfig = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : {
       apiKey:            "",
       authDomain:        "ggmaad-inventory-management.firebaseapp.com",
       databaseURL:       "https://ggmaad-inventory-management-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -1899,12 +1970,12 @@
     };
     const FIREBASE_DB_URL = (typeof window !== 'undefined' && window.FIREBASE_DB_URL) 
       ? window.FIREBASE_DB_URL 
-      : FIREBASE_CONFIG.databaseURL;
+      : activeFirebaseConfig.databaseURL;
 
     let fbWriteDebounce    = null;
     let fbDataLoaded       = false;  // true once Firebase sends us real data
     let fbWriteBlocked     = true;   // blocks writes until Firebase data arrives
-    let lastLocalWriteTime = 0;      // ms timestamp of last local Firebase write — used to detect remote updates
+    let lastLocalWriteTime = 0;      // ms timestamp of last local Firebase write &mdash; used to detect remote updates
     let prevDataSnapshot   = null;   // JSON snapshot of last received Firebase data (excl. /presence)
 
     // Category color map
@@ -1955,7 +2026,7 @@
       return false;
     }
 
-    // Map Firebase raw Excel item â†’ app component format
+    // Map Firebase raw Excel item Ã¢&acirc;&nbsp;&rsquo; app component format
     function mapFirebaseItem(fbKey, fbItem, idx, warehouseId) {
       const rawName      = cleanComponentName(fbItem.name || 'Unknown');
       if (isCorruptedName(rawName)) return null;
@@ -1983,7 +2054,7 @@
         cost: 0, price: 0,
         supplier:     'MAAD Lab',
         warehouseId:  warehouseId,
-        notes:        isTextBased ? `Stock: ${rawRemaining || rawTotal || 'In stock'}` : (remaining === 0 ? '⚠️ Out of stock' : '')
+        notes:        isTextBased ? `Stock: ${rawRemaining || rawTotal || 'In stock'}` : (remaining === 0 ? '&acirc;&nbsp;&iuml;¸Â Out of stock' : '')
       };
     }
 
@@ -2041,7 +2112,7 @@
       }
     }
 
-    // ── Real-Time Sync UI Helpers ──────────────────────────────────────────
+    // &acirc;&acirc; Real-Time Sync UI Helpers &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;
     function updateSyncStatus(status, text) {
       const pill     = document.getElementById('sync-status-pill');
       const dot      = document.getElementById('sync-dot');
@@ -2064,14 +2135,14 @@
       }
     }
 
-    // Start Firebase real-time listener — the ONE source of truth
+    // Start Firebase real-time listener &mdash; the ONE source of truth
     async function startFirebaseListener() {
       try {
         const { initializeApp, getApps }                                       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
         const { getDatabase, ref, onValue, set, update, onDisconnect, remove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
 
         // Prevent "app already exists" error on hot-reload
-        const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+        const app = getApps().length ? getApps()[0] : initializeApp(activeFirebaseConfig);
         const db  = getDatabase(app);
 
         window._fbRef    = ref;
@@ -2079,7 +2150,7 @@
         window._fbUpdate = update;
         window._fbDb     = db;
 
-        // ── Presence System ────────────────────────────────────────────────
+        // &acirc;&acirc; Presence System &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;
         // Each browser session registers itself and removes on disconnect
         const sessionId   = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
         const presenceRef = ref(db, '/presence/' + sessionId);
@@ -2087,22 +2158,22 @@
         // Monitor connection state & write presence heartbeat
         onValue(ref(db, '/.info/connected'), (snap) => {
           if (snap.val() === true) {
-            updateSyncStatus('live', 'ðŸŸ¢ Live');
+            updateSyncStatus('live', '\u{1F7E2} Live');
             set(presenceRef, { online: true, since: Date.now() });
             onDisconnect(presenceRef).remove();  // auto-clean on browser close
           } else {
-            updateSyncStatus('offline', 'ðŸ”´ Offline');
+            updateSyncStatus('offline', '\u{1F534} Offline');
           }
         });
 
-        // Count active sessions â†’ show "N online" badge
+        // Count active sessions Ã¢&acirc;€&nbsp;&rsquo; show "N online" badge
         onValue(ref(db, '/presence'), (snap) => {
           const data  = snap.val();
           const count = data ? Object.values(data).filter(s => s && s.online).length : 0;
           updateOnlineBadge(count);
         });
 
-        // ── Main Data Listener ─────────────────────────────────────────────
+        // &acirc;”€&acirc;”€ Main Data Listener &acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€&acirc;”€
         onValue(ref(db, '/'), (snapshot) => {
           // Remove loading bar
           const bar = document.getElementById('fb-loading-bar');
@@ -2110,7 +2181,7 @@
 
           const rootData = snapshot.val();
           if (!rootData || typeof rootData !== 'object') {
-            // Firebase is empty — render UI with defaults and DO NOT overwrite
+            // Firebase is empty &mdash; render UI with defaults and DO NOT overwrite
             render();
             return;
           }
@@ -2138,7 +2209,7 @@
 
           prevDataSnapshot = currentDataSnap;
 
-          // ── Apply Firebase data â†’ state ──
+          // &acirc;”€&acirc;”€ Apply Firebase data Ã¢&acirc;€&nbsp;&rsquo; state &acirc;”€&acirc;”€
 
           // 1. Inventory / Components
           if (rootData.inventory && typeof rootData.inventory === 'object') {
@@ -2224,7 +2295,7 @@
           fbWriteBlocked = false;  // Now safe to write back
 
           const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          updateSyncStatus('live', 'ðŸŸ¢ Live Â· ' + syncTime);
+          updateSyncStatus('live', '\u{1F7E2} Live &middot; ' + syncTime);
           updateLowStockBadge();
           populateDynamicDropdowns();
           lucide.createIcons();
@@ -2232,10 +2303,10 @@
 
           if (!window._fbFirstLoadDone) {
             window._fbFirstLoadDone = true;
-            triggerToast('âš¡ Firebase connected: ' + state.components.length + ' components live');
+            triggerToast('\u26A1 Firebase connected: ' + state.components.length + ' components live');
           } else if (isRemoteUpdate) {
-            // Another device pushed an update — notify and visually flash
-            triggerToast('ðŸ”„ Remote update — data refreshed from another device');
+            // Another device pushed an update &mdash; notify and visually flash
+            triggerToast('\u{1F504} Remote update &mdash; data refreshed from another device');
             const vc = document.getElementById('view-content');
             if (vc) {
               vc.classList.add('remote-update-flash');
@@ -2245,30 +2316,30 @@
         }, (error) => {
           const bar = document.getElementById('fb-loading-bar');
           if (bar) bar.remove();
-          updateSyncStatus('offline', 'ðŸ”´ Offline');
+          updateSyncStatus('offline', '\u{1F534} Offline');
           console.error('Firebase error:', error);
-          triggerToast('⚠️ Firebase: ' + error.message, true);
+          triggerToast('\u26A0 Firebase: ' + error.message, true);
           render(); // Always render something
         });
 
       } catch (err) {
         console.error('Firebase load error:', err);
-        updateSyncStatus('offline', 'ðŸ”´ Offline');
+        updateSyncStatus('offline', '\u{1F534} Offline');
         loadFromLocalStorageFallback();
       }
     }
 
-    // Write state to Firebase — only after Firebase has given us its data first
+    // Write state to Firebase &mdash; only after Firebase has given us its data first
     // Uses atomic path writes so /presence node is never overwritten
     async function syncFullStateToFirebase(immediate = false) {
       if (fbWriteBlocked) {
-        console.log('Write blocked — waiting for Firebase data first');
+        console.log('Write blocked &mdash; waiting for Firebase data first');
         return;
       }
       clearTimeout(fbWriteDebounce);
       fbWriteDebounce = setTimeout(async () => {
         try {
-          updateSyncStatus('syncing', 'ðŸ”„ Syncing...');
+          updateSyncStatus('syncing', '\u{1F504} Syncing...');
           lastLocalWriteTime = Date.now();  // Mark as a local write so onValue doesn't treat the echo as a remote update
 
           const ref = window._fbRef;
@@ -2314,10 +2385,10 @@
           }
 
           const syncTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          updateSyncStatus('live', 'ðŸŸ¢ Live Â· ' + syncTime);
-          console.log('âš¡ Firebase synced at ' + syncTime);
+          updateSyncStatus('live', '\u{1F7E2} Live &middot; ' + syncTime);
+          console.log('\u26A1 Firebase synced at ' + syncTime);
         } catch (err) {
-          updateSyncStatus('offline', 'ðŸ”´ Offline — retry pending');
+          updateSyncStatus('offline', '\u{1F534} Offline &mdash; retry pending');
           console.warn('Firebase write failed:', err);
         }
       }, immediate ? 80 : 250);
@@ -2327,7 +2398,7 @@
     function loadFromLocalStorageFallback() {
       const bar = document.getElementById('fb-loading-bar');
       if (bar) bar.remove();
-      updateSyncStatus('offline', '\uD83D\uDD34 Offline \u2014 local mode');
+      updateSyncStatus('offline', '\u{1F534} Offline \u2014 local mode');
       const raw = localStorage.getItem('inven3_state');
       if (raw) {
         try {
@@ -2345,7 +2416,7 @@
         state.categories   = defaultData.categories;
         state.stockHistory = defaultData.stockHistory;
       }
-      triggerToast('⚠️ Offline mode \u2014 changes saved locally only', true);
+      triggerToast('\u26A0 Offline mode \u2014 changes saved locally only', true);
       updateLowStockBadge();
       populateDynamicDropdowns();
       lucide.createIcons();
@@ -2367,16 +2438,20 @@
           state.stockHistory = p.stockHistory || defaultData.stockHistory;
           state.warehouses   = p.warehouses && p.warehouses.length ? p.warehouses : defaultData.warehouses;
           state.categories   = p.categories && p.categories.length ? p.categories : defaultData.categories;
-          state.components   = p.components  || [];
+          state.components   = (p.components && p.components.length) ? p.components : defaultData.components;
         } catch {
-          state.projects   = defaultData.projects;
-          state.warehouses = defaultData.warehouses;
-          state.categories = defaultData.categories;
+          state.components   = defaultData.components;
+          state.projects     = defaultData.projects;
+          state.warehouses   = defaultData.warehouses;
+          state.categories   = defaultData.categories;
+          state.stockHistory = defaultData.stockHistory;
         }
       } else {
-        state.projects   = defaultData.projects;
-        state.warehouses = defaultData.warehouses;
-        state.categories = defaultData.categories;
+        state.components   = defaultData.components;
+        state.projects     = defaultData.projects;
+        state.warehouses   = defaultData.warehouses;
+        state.categories   = defaultData.categories;
+        state.stockHistory = defaultData.stockHistory;
       }
 
       // Show loading bar
@@ -2402,7 +2477,7 @@
       startFirebaseListener();
     }
 
-    // Save State — saves to localStorage AND syncs to Firebase
+    // Save State &mdash; saves to localStorage AND syncs to Firebase
     // Only syncs to Firebase after data has been loaded FROM Firebase first
     function saveState() {
       localStorage.setItem('inven3_state', JSON.stringify({
@@ -2511,6 +2586,12 @@
       } else if (id === 'new-project') {
         document.getElementById('project-name').value = '';
         document.getElementById('project-desc').value = '';
+      } else if (id === 'stock-in') {
+        document.getElementById('stock-in-cost').value = '';
+        document.getElementById('stock-in-qty').value = '10';
+        document.getElementById('stock-in-po').value = '';
+        const tot = document.getElementById('stock-in-total');
+        if (tot) tot.innerHTML = '&#8377; 0.00';
       }
     }
 
@@ -2524,32 +2605,29 @@
       }
 
       // 2. Warehouses
-      const whSelect = document.getElementById('comp-warehouse');
+      const whSelect  = document.getElementById('comp-warehouse');
       const inWhSelect = document.getElementById('stock-in-warehouse');
       const srcWh = document.getElementById('transfer-source');
       const tgtWh = document.getElementById('transfer-target');
 
       const whOptions = state.warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-      if (whSelect) whSelect.innerHTML = whOptions;
+      if (whSelect)   whSelect.innerHTML   = whOptions;
       if (inWhSelect) inWhSelect.innerHTML = whOptions;
-      if (srcWh) srcWh.innerHTML = whOptions;
-      if (tgtWh) tgtWh.innerHTML = whOptions;
+      if (srcWh)      srcWh.innerHTML      = whOptions;
+      if (tgtWh)      tgtWh.innerHTML      = whOptions;
 
-      // 3. Components for Stock In / Out / Transfer
-      const inComp = document.getElementById('stock-in-component');
-      const outComp = document.getElementById('stock-out-component');
-      const trComp = document.getElementById('transfer-component');
+      // Auto-populate the component checklist for transfer modal
+      if (srcWh && srcWh.value) populateTransferComponentList();
 
-      const compOptions = state.components.map(c => `<option value="${c.id}">${c.name} (${c.sku}) — Available: ${c.spareQty} ${c.unit}</option>`).join('');
-      if (inComp) inComp.innerHTML = compOptions;
-      if (outComp) outComp.innerHTML = compOptions;
-      if (trComp) trComp.innerHTML = compOptions;
+      // Auto-populate checklists for Stock In / Out modals (if open)
+      if (document.getElementById('stock-in-list'))  populateStockInList();
+      if (document.getElementById('stock-out-list')) populateStockOutList();
 
       // 3b. Projects for Stock Out
       const outProj = document.getElementById('stock-out-project');
       if (outProj) {
         const projOptions = state.projects.map(p => `<option value="${p.id}">${p.name}${p.status ? ' (' + p.status + ')' : ''}</option>`).join('');
-        outProj.innerHTML = '<option value="">— None / No Project —</option>' + projOptions;
+        outProj.innerHTML = '<option value="">&mdash; None / No Project &mdash;</option>' + projOptions;
       }
 
       // 4. Categories list in modal
@@ -2603,8 +2681,8 @@
       render();
     }
 
-    // ── Stock History Ledger Logger ─────────────────────────────────────────
-    function addStockHistoryEntry({ sku = '', componentName = 'Item', qty = 1, action = 'Stock In (PO)', reason = '', projectName = '', warehouseName = '', assignedBy = '', assignedTo = '' }) {
+    // &acirc;&acirc; Stock History Ledger Logger &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;
+    function addStockHistoryEntry({ sku = '', componentName = 'Item', qty = 1, action = 'Stock In (PO)', reason = '', projectName = '', warehouseName = '', assignedBy = '', assignedTo = '', unitPrice = 0, totalPrice = 0 }) {
       if (!Array.isArray(state.stockHistory)) {
         state.stockHistory = [];
       }
@@ -2622,11 +2700,13 @@
         componentName: componentName || 'Item',
         qty: Number(qty) || 0,
         action: action,
-        reason: reason || '—',
+        reason: reason || '&mdash;',
         projectName: projectName || '',
-        warehouseName: warehouseName || '—',
+        warehouseName: warehouseName || '&mdash;',
         assignedBy: assignedBy || '',
-        assignedTo: assignedTo || ''
+        assignedTo: assignedTo || '',
+        unitPrice: Number(unitPrice) || 0,
+        totalPrice: Number(totalPrice) || 0
       };
       state.stockHistory.push(entry);
       return entry;
@@ -2791,68 +2871,162 @@
       }
     }
 
-    // 2. Submit Quick Stock In (Purchase / Restock)
+    // ── STOCK IN helpers ────────────────────────────────────────────
+    function populateStockInList() {
+      const container = document.getElementById('stock-in-list');
+      if (!container) return;
+      const search = (document.getElementById('stock-in-search')?.value || '').toLowerCase().trim();
+      const comps = state.components.filter(c =>
+        !search ||
+        (c.name||'').toLowerCase().includes(search) ||
+        (c.sku||'').toLowerCase().includes(search)
+      );
+      if (!comps.length) {
+        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px;padding:12px;text-align:center;">No components found.</div>';
+        return;
+      }
+      container.innerHTML = comps.map(comp => `
+        <label class="si-row" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(5,150,105,0.06)'" onmouseout="if(!this.querySelector('input').checked)this.style.background='transparent'">
+          <input type="checkbox" class="stock-in-chk" data-comp-id="${comp.id}" style="width:16px;height:16px;accent-color:#059669;cursor:pointer;" onclick="this.closest('label').style.background=this.checked?'rgba(5,150,105,0.08)':'transparent';updateStockInTotal()">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;">${comp.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+              <span class="sku-pill" style="font-size:10px;">${comp.sku}</span>
+              <span style="font-size:11px;color:var(--color-text-muted);">${getWarehouseName(comp.warehouseId)}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:var(--color-text-muted);">Qty:</span>
+              <input type="number" class="stock-in-qty" data-comp-id="${comp.id}" min="1" value="10" style="width:58px;padding:4px 6px;border:1px solid var(--color-border);border-radius:6px;font-size:13px;background:var(--color-bg);" onclick="event.stopPropagation()" oninput="updateStockInTotal()">
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:var(--color-text-muted);">&#8377;/pc:</span>
+              <input type="number" class="stock-in-price" data-comp-id="${comp.id}" min="0" step="0.01" value="${comp.price > 0 ? comp.price.toFixed(2) : ''}" placeholder="0.00" style="width:70px;padding:4px 6px;border:1px solid var(--color-border);border-radius:6px;font-size:13px;background:var(--color-bg);" onclick="event.stopPropagation()" oninput="updateStockInTotal()">
+            </div>
+          </div>
+        </label>
+      `).join('');
+      updateStockInTotal();
+    }
+
+    function stockInSelectAll() {
+      const cbs = document.querySelectorAll('.stock-in-chk');
+      const allChecked = [...cbs].every(cb => cb.checked);
+      cbs.forEach(cb => {
+        cb.checked = !allChecked;
+        cb.closest('label').style.background = cb.checked ? 'rgba(5,150,105,0.08)' : 'transparent';
+      });
+      updateStockInTotal();
+    }
+
+    function updateStockInTotal() {
+      let total = 0;
+      document.querySelectorAll('.stock-in-chk:checked').forEach(cb => {
+        const id = cb.dataset.compId;
+        const qty = parseFloat(document.querySelector(`.stock-in-qty[data-comp-id="${id}"]`)?.value) || 0;
+        const price = parseFloat(document.querySelector(`.stock-in-price[data-comp-id="${id}"]`)?.value) || 0;
+        total += qty * price;
+      });
+      const el = document.getElementById('stock-in-total');
+      if (el) el.textContent = '₹ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    // 2. Submit Quick Stock In (multi-product)
     function submitStockIn() {
-      const compId = document.getElementById('stock-in-component').value;
-      const qty = parseInt(document.getElementById('stock-in-qty').value) || 0;
       const whId = document.getElementById('stock-in-warehouse').value;
-      const po = document.getElementById('stock-in-po').value.trim() || 'Direct Restock';
+      const po   = document.getElementById('stock-in-po').value.trim() || 'Direct Restock';
+      const selected = document.querySelectorAll('.stock-in-chk:checked');
 
-      if (!compId) {
-        triggerToast("Please select a component to stock in.", true);
+      if (!selected.length) {
+        triggerToast('Please select at least one product to stock in.', true);
         return;
       }
 
-      if (qty <= 0) {
-        triggerToast("Please enter a valid received quantity greater than 0.", true);
-        return;
-      }
+      let processed = 0;
+      selected.forEach(cb => {
+        const compId = cb.dataset.compId;
+        const qty    = parseInt(document.querySelector(`.stock-in-qty[data-comp-id="${compId}"]`)?.value) || 0;
+        const price  = parseFloat(document.querySelector(`.stock-in-price[data-comp-id="${compId}"]`)?.value) || 0;
+        if (qty <= 0) return;
 
-      const comp = state.components.find(c => c.id === compId);
-      if (!comp) {
-        triggerToast("Selected component was not found in catalog.", true);
-        return;
-      }
+        const comp = state.components.find(c => c.id === compId);
+        if (!comp) return;
 
-      comp.totalQty = (Number(comp.totalQty) || 0) + qty;
-      comp.spareQty = (Number(comp.spareQty) || 0) + qty;
-      if (whId) comp.warehouseId = whId;
+        comp.totalQty = (Number(comp.totalQty) || 0) + qty;
+        comp.spareQty = (Number(comp.spareQty) || 0) + qty;
+        if (whId) comp.warehouseId = whId;
+        if (price > 0) comp.price = price;
 
-      addStockHistoryEntry({
-        sku: comp.sku,
-        componentName: comp.name,
-        qty: qty,
-        action: "Stock In (PO)",
-        reason: po,
-        projectName: "",
-        warehouseName: getWarehouseName(whId || comp.warehouseId)
+        addStockHistoryEntry({
+          sku: comp.sku, componentName: comp.name, qty,
+          action: 'Stock In (PO)', reason: po,
+          projectName: '', warehouseName: getWarehouseName(whId || comp.warehouseId),
+          unitPrice: price, totalPrice: price * qty
+        });
+        processed++;
       });
 
+      if (!processed) { triggerToast('No valid quantities entered.', true); return; }
       saveState();
       closeModal('stock-in');
-      triggerToast(`Successfully received +${qty} ${comp.unit || 'pcs'} of "${comp.name}".`);
+      triggerToast(`Stock In: ${processed} product${processed > 1 ? 's' : ''} received successfully.`);
       render();
     }
 
-    // Open Stock In for Specific Product
     function openStockInFor(compId) {
       openModal('stock-in');
+      populateStockInList();
       if (compId) {
-        document.getElementById('stock-in-component').value = compId;
-        const comp = state.components.find(c => c.id === compId);
-        if (comp && comp.warehouseId) {
-          document.getElementById('stock-in-warehouse').value = comp.warehouseId;
-        }
+        setTimeout(() => {
+          const cb = document.querySelector(`.stock-in-chk[data-comp-id="${compId}"]`);
+          if (cb) { cb.checked = true; cb.closest('label').style.background = 'rgba(5,150,105,0.08)'; updateStockInTotal(); }
+        }, 50);
       }
-      document.getElementById('stock-in-qty').value = '10';
-      document.getElementById('stock-in-po').value = '';
-      setTimeout(() => document.getElementById('stock-in-qty').focus(), 100);
     }
 
-    // 3. Submit Quick Stock Out (Sales / Dispatch)
+    // ── STOCK OUT helpers ────────────────────────────────────────────
+    function populateStockOutList() {
+      const container = document.getElementById('stock-out-list');
+      if (!container) return;
+      const search = (document.getElementById('stock-out-search')?.value || '').toLowerCase().trim();
+      const comps = state.components.filter(c =>
+        (c.spareQty || 0) > 0 &&
+        (!search || (c.name||'').toLowerCase().includes(search) || (c.sku||'').toLowerCase().includes(search))
+      );
+      if (!comps.length) {
+        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px;padding:12px;text-align:center;">No components with available stock.</div>';
+        return;
+      }
+      container.innerHTML = comps.map(comp => `
+        <label class="so-row" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(220,38,38,0.05)'" onmouseout="if(!this.querySelector('input').checked)this.style.background='transparent'">
+          <input type="checkbox" class="stock-out-chk" data-comp-id="${comp.id}" data-max="${comp.spareQty}" style="width:16px;height:16px;accent-color:#dc2626;cursor:pointer;" onclick="this.closest('label').style.background=this.checked?'rgba(220,38,38,0.06)':'transparent'">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;">${comp.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+              <span class="sku-pill" style="font-size:10px;">${comp.sku}</span>
+              <span style="font-size:11px;color:#059669;font-weight:600;">In stock: ${comp.spareQty} ${comp.unit||'pcs'}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <span style="font-size:11px;color:var(--color-text-muted);">Qty:</span>
+            <input type="number" class="stock-out-qty" data-comp-id="${comp.id}" min="1" max="${comp.spareQty}" value="1" style="width:60px;padding:4px 6px;border:1px solid var(--color-border);border-radius:6px;font-size:13px;background:var(--color-bg);" onclick="event.stopPropagation()" onchange="this.value=Math.min(Math.max(1,this.value),${comp.spareQty})">
+          </div>
+        </label>
+      `).join('');
+    }
+
+    function stockOutSelectAll() {
+      const cbs = document.querySelectorAll('.stock-out-chk');
+      const allChecked = [...cbs].every(cb => cb.checked);
+      cbs.forEach(cb => {
+        cb.checked = !allChecked;
+        cb.closest('label').style.background = cb.checked ? 'rgba(220,38,38,0.06)' : 'transparent';
+      });
+    }
+
+    // 3. Submit Quick Stock Out (multi-product)
     function submitStockOut() {
-      const compId     = document.getElementById('stock-out-component').value;
-      const qty        = parseInt(document.getElementById('stock-out-qty').value) || 0;
       const reason     = document.getElementById('stock-out-reason').value;
       const ref        = document.getElementById('stock-out-ref').value.trim() || reason;
       const projId     = document.getElementById('stock-out-project').value;
@@ -2861,76 +3035,52 @@
       const proj       = projId ? state.projects.find(p => p.id === projId) : null;
       const projName   = proj ? proj.name : '';
 
-      if (!compId) {
-        triggerToast("Please select a component to stock out.", true);
+      const selected = document.querySelectorAll('.stock-out-chk:checked');
+      if (!selected.length) {
+        triggerToast('Please select at least one product to dispatch.', true);
         return;
       }
 
-      if (qty <= 0) {
-        triggerToast("Please enter a valid quantity greater than 0.", true);
-        return;
-      }
+      let processed = 0;
+      let errors = [];
 
-      const comp = state.components.find(c => c.id === compId);
-      if (!comp) {
-        triggerToast("Selected component was not found in catalog.", true);
-        return;
-      }
+      selected.forEach(cb => {
+        const compId = cb.dataset.compId;
+        const qty    = parseInt(document.querySelector(`.stock-out-qty[data-comp-id="${compId}"]`)?.value) || 0;
+        if (qty <= 0) return;
 
-      if ((comp.spareQty || 0) < qty) {
-        triggerToast(`Insufficient stock! Only ${comp.spareQty || 0} ${comp.unit || 'pcs'} available.`, true);
-        return;
-      }
+        const comp = state.components.find(c => c.id === compId);
+        if (!comp) return;
 
-      if (proj) {
-        // Project-linked: spare â†’ in-use (units stay in total, just deployed to project)
-        comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
-        comp.inUseQty = (Number(comp.inUseQty) || 0) + qty;
-
-        if (!Array.isArray(proj.usedComponents)) proj.usedComponents = [];
-        const existing = proj.usedComponents.find(uc => uc.componentId === comp.id);
-        if (existing) {
-          existing.qty += qty;
-        } else {
-          proj.usedComponents.push({ componentId: comp.id, qty: qty });
+        if ((comp.spareQty || 0) < qty) {
+          errors.push(`${comp.name}: only ${comp.spareQty} available`);
+          return;
         }
 
-        addStockHistoryEntry({
-          sku:           comp.sku,
-          componentName: comp.name,
-          qty:           qty,
-          action:        "Assigned to Project",
-          reason:        `${reason} [${ref}]`,
-          projectName:   projName,
-          warehouseName: getWarehouseName(comp.warehouseId),
-          assignedBy:    assignedBy,
-          assignedTo:    assignedTo
-        });
-      } else {
-        // No project: true dispatch / sale — units leave inventory entirely
-        comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
-        comp.totalQty = Math.max(0, (Number(comp.totalQty) || 0) - qty);
+        if (proj) {
+          comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
+          comp.inUseQty = (Number(comp.inUseQty) || 0) + qty;
+          if (!Array.isArray(proj.usedComponents)) proj.usedComponents = [];
+          const existing = proj.usedComponents.find(uc => uc.componentId === comp.id);
+          if (existing) { existing.qty += qty; } else { proj.usedComponents.push({ componentId: comp.id, qty }); }
+          addStockHistoryEntry({ sku: comp.sku, componentName: comp.name, qty, action: 'Assigned to Project', reason: `${reason} [${ref}]`, projectName: projName, warehouseName: getWarehouseName(comp.warehouseId), assignedBy, assignedTo });
+        } else {
+          comp.spareQty = Math.max(0, (Number(comp.spareQty) || 0) - qty);
+          comp.totalQty = Math.max(0, (Number(comp.totalQty) || 0) - qty);
+          addStockHistoryEntry({ sku: comp.sku, componentName: comp.name, qty, action: 'Stock Out (Sale)', reason: `${reason} [${ref}]`, projectName: '', warehouseName: getWarehouseName(comp.warehouseId), assignedBy, assignedTo });
+        }
+        processed++;
+      });
 
-        addStockHistoryEntry({
-          sku:           comp.sku,
-          componentName: comp.name,
-          qty:           qty,
-          action:        "Stock Out (Sale)",
-          reason:        `${reason} [${ref}]`,
-          projectName:   '',
-          warehouseName: getWarehouseName(comp.warehouseId),
-          assignedBy:    assignedBy,
-          assignedTo:    assignedTo
-        });
+      if (errors.length) triggerToast(`Skipped: ${errors.join('; ')}`, true);
+      if (processed > 0) {
+        saveState();
+        closeModal('stock-out');
+        triggerToast(`Stock Out: ${processed} product${processed > 1 ? 's' : ''} dispatched${proj ? ' to ' + projName : ''}.`);
+        render();
       }
-
-      saveState();
-      closeModal('stock-out');
-      triggerToast(`Dispatched -${qty} ${comp.unit || 'pcs'} of "${comp.name}".`);
-      render();
     }
 
-    // Open Stock Out for Specific Product
     function openStockOutFor(compId) {
       openModal('stock-out');
       if (compId) {
@@ -2945,52 +3095,109 @@
     }
 
     // 4. Submit Stock Transfer
-    function submitStockTransfer() {
-      const compId = document.getElementById('transfer-component').value;
-      const srcId = document.getElementById('transfer-source').value;
-      const tgtId = document.getElementById('transfer-target').value;
-      const qty = parseInt(document.getElementById('transfer-qty').value) || 0;
+    // Populate checklist of components for the selected source warehouse
+    function populateTransferComponentList() {
+      const srcEl = document.getElementById('transfer-source');
+      const container = document.getElementById('transfer-component-list');
+      if (!container || !srcEl) return;
 
-      if (!compId) {
-        triggerToast("Please select a component.", true);
+      const srcId = srcEl.value;
+
+      // First try exact warehouse match, then fall back to all with spareQty > 0
+      let whComps = state.components.filter(c => c.warehouseId === srcId && (c.spareQty || 0) > 0);
+      const usingAll = !whComps.length;
+      if (usingAll) {
+        whComps = state.components.filter(c => (c.spareQty || 0) > 0);
+      }
+
+      if (!whComps.length) {
+        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px;padding:12px 8px;text-align:center;">No components with available stock found.</div>';
         return;
       }
+
+      const note = usingAll ? '<div style="font-size:11px;color:var(--color-accent-amber);padding:4px 8px;margin-bottom:4px;">Showing all components (none assigned to this warehouse specifically)</div>' : '';
+
+      container.innerHTML = note + whComps.map(comp => `
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(124,58,237,0.06)'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" class="transfer-comp-chk" data-comp-id="${comp.id}" data-max="${comp.spareQty||0}" style="width:16px;height:16px;accent-color:var(--color-accent-purple);cursor:pointer;" onclick="this.parentElement.style.background=this.checked?'rgba(124,58,237,0.08)':'transparent'">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;">${comp.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+              <span class="sku-pill" style="font-size:10px;">${comp.sku}</span>
+              <span style="font-size:11px;color:#059669;font-weight:600;">Stock: ${comp.spareQty} ${comp.unit||'pcs'}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <label style="font-size:11px;color:var(--color-text-muted);margin:0;">Qty:</label>
+            <input type="number" class="transfer-comp-qty" data-comp-id="${comp.id}" min="1" max="${comp.spareQty}" value="${Math.min(1,comp.spareQty)}" style="width:60px;padding:4px 6px;border:1px solid var(--color-border);border-radius:6px;font-size:13px;background:var(--color-bg);" onclick="event.stopPropagation()" onchange="this.value=Math.min(Math.max(1,this.value),${comp.spareQty})">
+          </div>
+        </label>
+      `).join('');
+    }
+
+    function transferSelectAll() {
+      const checkboxes = document.querySelectorAll('.transfer-comp-chk');
+      const allChecked = [...checkboxes].every(cb => cb.checked);
+      checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
+
+    function submitStockTransfer() {
+      const srcId = document.getElementById('transfer-source').value;
+      const tgtId = document.getElementById('transfer-target').value;
 
       if (srcId === tgtId) {
         triggerToast("Source and target warehouse must be different!", true);
         return;
       }
 
-      if (qty <= 0) {
-        triggerToast("Please enter a valid transfer quantity greater than 0.", true);
+      const checkboxes = document.querySelectorAll('.transfer-comp-chk:checked');
+      if (!checkboxes.length) {
+        triggerToast("Please select at least one component to transfer.", true);
         return;
       }
 
-      const comp = state.components.find(c => c.id === compId);
-      if (!comp) return;
+      let transferred = 0;
+      let errors = [];
 
-      if ((comp.spareQty || 0) < qty) {
-        triggerToast(`Cannot transfer ${qty} units. Only ${comp.spareQty || 0} available in stock!`, true);
-        return;
-      }
+      checkboxes.forEach(cb => {
+        const compId = cb.dataset.compId;
+        const qtyInput = document.querySelector(`.transfer-comp-qty[data-comp-id="${compId}"]`);
+        const qty = parseInt(qtyInput?.value) || 1;
+        const comp = state.components.find(c => c.id === compId);
+        if (!comp) return;
 
-      comp.warehouseId = tgtId;
+        if ((comp.spareQty || 0) < qty) {
+          errors.push(`${comp.name}: only ${comp.spareQty} available`);
+          return;
+        }
 
-      addStockHistoryEntry({
-        sku: comp.sku,
-        componentName: comp.name,
-        qty: qty,
-        action: "Transferred",
-        reason: `Moved from ${getWarehouseName(srcId)} to ${getWarehouseName(tgtId)}`,
-        projectName: "",
-        warehouseName: `${getWarehouseName(srcId)} âž” ${getWarehouseName(tgtId)}`
+        comp.warehouseId = tgtId;
+
+        addStockHistoryEntry({
+          sku: comp.sku,
+          componentName: comp.name,
+          qty: qty,
+          action: "Transferred",
+          reason: `Moved from ${getWarehouseName(srcId)} to ${getWarehouseName(tgtId)}`,
+          projectName: "",
+          warehouseName: `${getWarehouseName(srcId)} -> ${getWarehouseName(tgtId)}`
+        });
+        transferred++;
       });
 
-      saveState();
-      closeModal('stock-transfer');
-      triggerToast(`Transferred ${qty} ${comp.unit || 'pcs'} of "${comp.name}" to ${getWarehouseName(tgtId)}.`);
-      render();
+      if (errors.length) {
+        triggerToast(`Errors: ${errors.join('; ')}`, true);
+      }
+
+      if (transferred > 0) {
+        saveState();
+        closeModal('stock-transfer');
+        triggerToast(`Transferred ${transferred} component type${transferred > 1 ? 's' : ''} to ${getWarehouseName(tgtId)}.`);
+        render();
+      }
     }
+
+
 
     // 5. Submit New Warehouse
     function submitNewWarehouse() {
@@ -3055,7 +3262,7 @@
           action: "Removed",
           reason: `Warehouse "${wh.name}" deleted (items moved to ${remainingWh.name})`,
           projectName: "",
-          warehouseName: `${wh.name} âž” ${remainingWh.name}`
+          warehouseName: `${wh.name} -> ${remainingWh.name}`
         });
 
         saveState();
@@ -3133,7 +3340,7 @@
       const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
       if (!paginated.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--color-text-muted);">
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--color-text-muted);">
           <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
             <div>No components match the current search "${searchInput}".</div>
             <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
@@ -3143,14 +3350,13 @@
           const catColor = getCategoryColor(comp.category);
           const health = getStockHealthBadge(comp);
           const whName = getWarehouseName(comp.warehouseId);
-          const price = (comp.price || 0).toFixed(2);
-          const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
-          const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
+          const inUseQty = Number(comp.inUseQty) || 0;
+          const totalQty = Number(comp.totalQty) || 0;
           return `<tr>
             <td style="max-width:220px;">
               <div class="comp-name-cell" title="${(comp.name || 'Unnamed').replace(/"/g,'&quot;')}">${comp.name || 'Unnamed'}</div>
               <div style="display:flex;align-items:center;gap:6px;margin-top:2px;overflow:hidden;">
-                <span class="sku-pill" style="white-space:nowrap;">${comp.sku || '—'}</span>
+                <span class="sku-pill" style="white-space:nowrap;">${comp.sku || '&mdash;'}</span>
                 <span style="font-size:11px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${comp.supplier || 'N/A'}</span>
               </div>
             </td>
@@ -3158,8 +3364,7 @@
             <td><span style="font-size:12.5px;color:var(--color-text-muted);">${whName}</span></td>
             <td>${health}</td>
             <td><strong style="color:var(--color-accent-amber);">${inUseQty}</strong></td>
-            <td><strong>${totalQty} ${comp.unit || 'pcs'}</strong></td>
-            <td>â‚¹${price}</td>
+            <td><strong>${totalQty} <span style="font-size:11px;font-weight:500;color:var(--color-text-muted);">${comp.unit || 'pcs'}</span></strong></td>
             <td>
               <div class="qty-assign-container">
                 <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
@@ -3192,17 +3397,17 @@
           if (i === 1 || i === totalPages || (i >= state.compPage - range && i <= state.compPage + range)) {
             pages += `<button class="btn btn-secondary" style="min-width:36px;padding:6px 10px;${i === state.compPage ? 'background:var(--color-accent-purple);color:#fff;border-color:var(--color-accent-purple);' : ''}" onclick="state.compPage=${i};renderComponentsTableOnly();">${i}</button>`;
           } else if (i === state.compPage - range - 1 || i === state.compPage + range + 1) {
-            pages += `<span style="padding:0 4px;color:var(--color-text-muted);">â€¦</span>`;
+            pages += `<span style="padding:0 4px;color:var(--color-text-muted);">...</span>`;
           }
         }
         paginWrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px;flex-wrap:wrap;gap:8px;">
           <div style="font-size:13px;color:var(--color-text-muted);">
-            Showing <strong>${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
+            Showing <strong>${pageStart + 1}&ndash;${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;renderComponentsTableOnly();">â† Prev</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;renderComponentsTableOnly();">&#8592; Prev</button>
             ${pages}
-            <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;renderComponentsTableOnly();">Next â†’</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;renderComponentsTableOnly();">Next &#8594;</button>
           </div>
         </div>`;
       }
@@ -3501,12 +3706,14 @@
 
     function getStockHealthBadge(comp) {
       const min = comp.minThreshold || 5;
-      if (comp.spareQty === 0) {
-        return `<span class="stock-status-badge status-out"><i data-lucide="alert-octagon" style="width:12px;"></i> Out of Stock</span>`;
-      } else if (comp.spareQty <= min) {
-        return `<span class="stock-status-badge status-low"><i data-lucide="alert-triangle" style="width:12px;"></i> Low (${comp.spareQty}/${min})</span>`;
+      const spare = Number(comp.spareQty) || 0;
+      const total = Number(comp.totalQty) || 0;
+      if (spare === 0) {
+        return `<span class="stock-status-badge status-out"><i data-lucide="alert-octagon" style="width:12px;"></i> Out of Stock (0/${total})</span>`;
+      } else if (spare <= min) {
+        return `<span class="stock-status-badge status-low"><i data-lucide="alert-triangle" style="width:12px;"></i> Low (${spare}/${total})</span>`;
       } else {
-        return `<span class="stock-status-badge status-ok"><i data-lucide="check" style="width:12px;"></i> In Stock (${comp.spareQty})</span>`;
+        return `<span class="stock-status-badge status-ok"><i data-lucide="check" style="width:12px;"></i> In Stock (${spare}/${total})</span>`;
       }
     }
 
@@ -3548,7 +3755,7 @@
 
     // 9. Export to CSV Engine
     function exportCatalogCSV() {
-      let csv = 'SKU,Component Name,Category,Available Qty,In Use Qty,Total Qty,Unit,Cost (â‚¹),Price (â‚¹),Total Asset Value (â‚¹),Warehouse,Supplier\n';
+      let csv = 'SKU,Component Name,Category,Available Qty,In Use Qty,Total Qty,Unit,Cost (&#8377;),Price (&#8377;),Total Asset Value (&#8377;),Warehouse,Supplier\n';
       state.components.forEach(c => {
         const val = (c.totalQty * (c.price || 0)).toFixed(2);
         csv += `"${c.sku}","${c.name}","${c.category}",${c.spareQty},${c.inUseQty},${c.totalQty},"${c.unit}",${c.cost || 0},${c.price || 0},${val},"${getWarehouseName(c.warehouseId)}","${c.supplier || ''}"\n`;
@@ -3557,14 +3764,61 @@
       triggerToast("Catalog exported to CSV!");
     }
 
+    // Edit Ledger Entry
+    function openEditLedgerEntry(sNo) {
+      const entry = (state.stockHistory || []).find(h => h && h.sNo == sNo);
+      if (!entry) { triggerToast('Entry not found.', true); return; }
+      document.getElementById('edit-ledger-sno').value = sNo;
+      document.getElementById('edit-ledger-name').value = entry.componentName || '';
+      document.getElementById('edit-ledger-date').value = entry.date || '';
+      document.getElementById('edit-ledger-qty').value = entry.qty || 1;
+      document.getElementById('edit-ledger-unit-price').value = entry.unitPrice > 0 ? entry.unitPrice.toFixed(2) : '';
+      document.getElementById('edit-ledger-reason').value = entry.reason || '';
+      calcEditLedgerTotal();
+      openModal('edit-ledger');
+    }
+
+    function calcEditLedgerTotal() {
+      const qty   = parseFloat(document.getElementById('edit-ledger-qty')?.value) || 0;
+      const price = parseFloat(document.getElementById('edit-ledger-unit-price')?.value) || 0;
+      const total = qty * price;
+      const el = document.getElementById('edit-ledger-total');
+      if (el) el.innerHTML = `&#8377; ${total.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+
+    function saveEditLedgerEntry() {
+      const sNo   = parseInt(document.getElementById('edit-ledger-sno').value);
+      const name  = document.getElementById('edit-ledger-name').value.trim();
+      const date  = document.getElementById('edit-ledger-date').value;
+      const qty   = parseInt(document.getElementById('edit-ledger-qty').value) || 1;
+      const price = parseFloat(document.getElementById('edit-ledger-unit-price').value) || 0;
+      const reason = document.getElementById('edit-ledger-reason').value.trim();
+
+      const entry = (state.stockHistory || []).find(h => h && h.sNo == sNo);
+      if (!entry) { triggerToast('Entry not found.', true); return; }
+
+      if (name)   entry.componentName = name;
+      if (date)   entry.date = date;
+      entry.qty        = qty;
+      entry.unitPrice  = price;
+      entry.totalPrice = price * qty;
+      if (reason) entry.reason = reason;
+
+      saveState();
+      closeModal('edit-ledger');
+      triggerToast('Ledger entry #' + sNo + ' updated.');
+      render();
+    }
+
     function exportLedgerCSV() {
-      let csv = 'S.No,Date,SKU,Component Name,Qty Change,Action,Reason / Reference,Project Context,Assigned By,Assigned To,Warehouse Location\n';
+      let csv = 'S.No,Date,SKU,Component Name,Qty Change,Action,Reason / Reference,Project Context,Assigned By,Assigned To,Unit Price,Total Value,Warehouse Location\n';
       state.stockHistory.forEach(h => {
-        csv += `${h.sNo},"${h.date}","${h.sku || ''}","${h.componentName}",${h.qty},"${h.action}","${h.reason || ''}","${h.projectName || ''}","${h.assignedBy || ''}","${h.assignedTo || ''}","${h.warehouseName || ''}"\n`;
+        csv += `${h.sNo},"${h.date}","${h.sku || ''}","${h.componentName}",${h.qty},"${h.action}","${h.reason || ''}","${h.projectName || ''}","${h.assignedBy || ''}","${h.assignedTo || ''}",${h.unitPrice||0},${h.totalPrice||0},"${h.warehouseName || ''}"\n`;
       });
       downloadFile(csv, 'Inven3_Transaction_Ledger.csv', 'text/csv');
       triggerToast("Audit Ledger exported to CSV!");
     }
+
 
     function downloadFile(content, fileName, mimeType) {
       const blob = new Blob([content], { type: mimeType });
@@ -3636,7 +3890,7 @@
             </div>
           </div>
 
-          <!-- Low Stock Alert — Compact Collapsible Dropdown -->
+          <!-- Low Stock Alert &mdash; Compact Collapsible Dropdown -->
           ${lowStockItems.length > 0 ? `
             <div class="low-stock-dropdown" id="low-stock-panel">
               <button class="low-stock-header" onclick="toggleLowStockPanel()" id="low-stock-toggle-btn">
@@ -3656,7 +3910,7 @@
               </button>
               <div class="low-stock-body" id="low-stock-body" style="display:none;">
                 <div style="padding:12px 16px;border-bottom:1px solid #fecdd3;display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:12px;color:#be123c;font-weight:600;">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock &nbsp;â€¢&nbsp; ${lowStockItems.filter(i=>i.spareQty>0).length} critically low</span>
+                  <span style="font-size:12px;color:#be123c;font-weight:600;">${lowStockItems.filter(i=>i.spareQty===0).length} out of stock &bull; ${lowStockItems.filter(i=>i.spareQty>0).length} critically low</span>
                   <button class="btn btn-secondary" style="border-color:#fecdd3;color:#9f1239;font-size:12px;padding:5px 12px;" onclick="filterLowStockView()">
                     <i data-lucide="eye" style="width:13px;"></i> View All
                   </button>
@@ -3670,7 +3924,7 @@
                         <span style="font-size:11px;color:#9f1239;background:#fef2f2;padding:2px 7px;border-radius:10px;">${item.category}</span>
                       </div>
                       <span style="font-size:12px;font-weight:700;color:${item.spareQty===0?'#e11d48':'#f97316'};min-width:60px;text-align:right;">
-                        ${item.spareQty === 0 ? 'ðŸ”´ Out of stock' : item.spareQty + ' left'}
+                        ${item.spareQty === 0 ? '&#128308; Out of stock' : item.spareQty + ' left'}
                       </span>
                     </div>
                   `).join('')}
@@ -3824,7 +4078,7 @@
                         : h.action.includes('Assigned') ? '#7c3aed'
                         : '#2563eb';
                       const sign = h.action.includes('In') || h.action === 'Added' || h.action === 'Returned from Project' ? '+' :
-                        h.action.includes('Out') || h.action === 'Removed' ? '-' : 'Â±';
+                        h.action.includes('Out') || h.action === 'Removed' ? '-' : '&plusmn;';
                       return `<tr>
                         <td style="font-size:12px;color:var(--color-text-muted);">${h.date || ''}</td>
                         <td><div style="font-weight:600;font-size:13px;">${h.componentName || ''}</div><span class="sku-pill" style="font-size:10px;">${h.sku || ''}</span></td>
@@ -3909,10 +4163,10 @@
 
         // Sort icon helper
         function sortIcon(field) {
-          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">â‡…</span>';
+          if (state.sortField !== field) return '<span style="opacity:0.3;margin-left:4px;font-size:10px;">&#8645;</span>';
           return state.sortDir === 'asc'
-            ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">â–²</span>'
-            : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">â–¼</span>';
+            ? '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">&#9650;</span>'
+            : '<span style="color:var(--color-accent-purple);margin-left:4px;font-size:10px;">&#9660;</span>';
         }
         function sortTh(field, label) {
           const active = state.sortField === field;
@@ -3923,7 +4177,7 @@
         // Row HTML builder
         function buildRows(items) {
           if (!items.length) {
-            return `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--color-text-muted);">
+            return `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--color-text-muted);">
               <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                 <div>No components match the current search or filters.</div>
                 <button class="btn btn-secondary" onclick="resetComponentFilters()">Show All Components</button>
@@ -3933,14 +4187,13 @@
             const catColor = getCategoryColor(comp.category);
             const health = getStockHealthBadge(comp);
             const whName = getWarehouseName(comp.warehouseId);
-            const price = (comp.price || 0).toFixed(2);
-            const inUseQty = comp.inUseQty !== undefined ? comp.inUseQty : 0;
-            const totalQty = comp.totalQty !== undefined ? comp.totalQty : 0;
+            const inUseQty = Number(comp.inUseQty) || 0;
+            const totalQty = Number(comp.totalQty) || 0;
             return `<tr>
               <td style="max-width:220px;">
                 <div class="comp-name-cell" title="${(comp.name || 'Unnamed').replace(/"/g,'&quot;')}">${comp.name || 'Unnamed'}</div>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:2px;overflow:hidden;">
-                  <span class="sku-pill" style="white-space:nowrap;">${comp.sku || '—'}</span>
+                  <span class="sku-pill" style="white-space:nowrap;">${comp.sku || '&mdash;'}</span>
                   <span style="font-size:11px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${comp.supplier || 'N/A'}</span>
                 </div>
               </td>
@@ -3948,8 +4201,7 @@
               <td><span style="font-size:12.5px;color:var(--color-text-muted);">${whName}</span></td>
               <td>${health}</td>
               <td><strong style="color:var(--color-accent-amber);">${inUseQty}</strong></td>
-              <td><strong>${totalQty} ${comp.unit || 'pcs'}</strong></td>
-              <td>â‚¹${price}</td>
+              <td><strong>${totalQty} <span style="font-size:11px;font-weight:500;color:var(--color-text-muted);">${comp.unit || 'pcs'}</span></strong></td>
               <td>
                 <div class="qty-assign-container">
                   <button class="btn-action-sm emerald" onclick="openStockInFor('${comp.id}')" title="Quick Stock In">+ In</button>
@@ -3981,17 +4233,17 @@
             if (i === 1 || i === totalPages || (i >= state.compPage - range && i <= state.compPage + range)) {
               pages += `<button class="btn btn-secondary" style="min-width:36px;padding:6px 10px;${i === state.compPage ? 'background:var(--color-accent-purple);color:#fff;border-color:var(--color-accent-purple);' : ''}" onclick="state.compPage=${i};render();">${i}</button>`;
             } else if (i === state.compPage - range - 1 || i === state.compPage + range + 1) {
-              pages += `<span style="padding:0 4px;color:var(--color-text-muted);">â€¦</span>`;
+              pages += `<span style="padding:0 4px;color:var(--color-text-muted);">...</span>`;
             }
           }
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px;flex-wrap:wrap;gap:8px;">
             <div style="font-size:13px;color:var(--color-text-muted);">
-              Showing <strong>${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
+              Showing <strong>${pageStart + 1}&ndash;${Math.min(pageStart + PAGE_SIZE, filtered.length)}</strong> of <strong>${filtered.length}</strong> components
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;render();">â† Prev</button>
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${prevDis} onclick="state.compPage--;render();">&#8592; Prev</button>
               ${pages}
-              <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;render();">Next â†’</button>
+              <button class="btn btn-secondary" style="padding:6px 12px;" ${nextDis} onclick="state.compPage++;render();">Next &#8594;</button>
             </div>
           </div>`;
         }
@@ -4059,7 +4311,6 @@
                       <th>Health Status</th>
                       ${sortTh('inuse', 'In Use')}
                       ${sortTh('total', 'Total')}
-                      ${sortTh('price', 'Price (â‚¹)')}
                       <th>Quick Actions</th>
                       <th>Actions</th>
                     </tr>
@@ -4157,15 +4408,21 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Component & SKU</th>
+                      <th>Component &amp; SKU</th>
                       <th>Category</th>
-                      <th>Quantity Assigned</th>
+                      <th style="text-align:center;">Qty Assigned</th>
+                      <th style="text-align:right;">Unit Price (&#8377;)</th>
+                      <th style="text-align:right;">Total Value (&#8377;)</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${(proj.usedComponents || []).map(uc => {
                       const comp = state.components.find(c => c.id === uc.componentId);
                       if (!comp) return '';
+                      const unitPrice = Number(comp.price) || 0;
+                      const totalVal  = unitPrice * (Number(uc.qty) || 0);
+                      const priceDisp = unitPrice > 0 ? `&#8377;${unitPrice.toFixed(2)}` : '<span style="color:var(--color-text-muted)">&mdash;</span>';
+                      const totalDisp = unitPrice > 0 ? `<strong style="color:var(--color-accent-teal);">&#8377;${totalVal.toFixed(2)}</strong>` : '<span style="color:var(--color-text-muted)">&mdash;</span>';
                       return `
                         <tr>
                           <td>
@@ -4177,11 +4434,20 @@
                               ${comp.category}
                             </span>
                           </td>
-                          <td><strong>${uc.qty} ${comp.unit}</strong></td>
+                          <td style="text-align:center;"><strong>${uc.qty} ${comp.unit}</strong></td>
+                          <td style="text-align:right;">${priceDisp}</td>
+                          <td style="text-align:right;">${totalDisp}</td>
                         </tr>
                       `;
                     }).join('')}
-                    ${(proj.usedComponents || []).length === 0 ? '<tr><td colspan="3" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project. Use Stock Out → Link to Project or the Components view to assign hardware.</td></tr>' : ''}
+                    ${(() => {
+                      if ((proj.usedComponents || []).length === 0) return '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--color-text-muted);">No components currently assigned to this project.</td></tr>';
+                      const grandTotal = (proj.usedComponents || []).reduce((sum, uc) => {
+                        const comp = state.components.find(c => c.id === uc.componentId);
+                        return sum + ((comp && comp.price > 0) ? Number(comp.price) * Number(uc.qty) : 0);
+                      }, 0);
+                      return grandTotal > 0 ? `<tr style="background:rgba(13,148,136,0.06);border-top:2px solid var(--color-accent-teal);"><td colspan="4" style="text-align:right;font-weight:700;padding:12px 16px;">Total Project Value</td><td style="text-align:right;font-weight:800;color:var(--color-accent-teal);font-size:15px;padding:12px 16px;">&#8377;${grandTotal.toFixed(2)}</td></tr>` : '';
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -4242,7 +4508,7 @@
                     </div>
                     <div>
                       <div style="font-size:11px; color:var(--color-text-muted);">Value</div>
-                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">â‚¹${totalVal.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+                      <div style="font-weight:700; font-size:15px; color:var(--color-accent-teal);">&#8377;${totalVal.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
                     </div>
                   </div>
 
@@ -4306,7 +4572,7 @@
                     <th>Category</th>
                     <th>SKU Count</th>
                     <th>Total Units</th>
-                    <th>Total Valuation (â‚¹)</th>
+                    <th>Total Valuation (&#8377;)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -4325,7 +4591,7 @@
                         </td>
                         <td><strong>${items.length}</strong></td>
                         <td>${units}</td>
-                        <td><strong>â‚¹${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+                        <td><strong>&#8377;${val.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
                         <td>
                           <button class="btn-action-sm secondary" onclick="state.currentView='components'; state.compCatFilter='${cat.name}'; state.compPage=1; render();">
                             View Items
@@ -4415,13 +4681,13 @@
                       ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;background:rgba(124,58,237,0.08);color:#7c3aed;padding:2px 8px;border-radius:20px;border:1px solid rgba(124,58,237,0.18);">
                            <i data-lucide="user" style="width:11px;height:11px;"></i>${entry.assignedBy}
                          </span>`
-                      : '<span style="color:var(--color-text-muted);font-size:12px;">—</span>';
+                      : '<span style="color:var(--color-text-muted);font-size:12px;">&mdash;</span>';
 
                     const assignedToCell = entry.assignedTo
                       ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;background:rgba(13,148,136,0.08);color:#0d9488;padding:2px 8px;border-radius:20px;border:1px solid rgba(13,148,136,0.18);">
                            <i data-lucide="user-check" style="width:11px;height:11px;"></i>${entry.assignedTo}
                          </span>`
-                      : '<span style="color:var(--color-text-muted);font-size:12px;">—</span>';
+                      : '<span style="color:var(--color-text-muted);font-size:12px;">&mdash;</span>';
 
                     return `
                       <tr>
@@ -4433,11 +4699,11 @@
                         </td>
                         <td><strong>${entry.qty}</strong></td>
                         <td>${actionBadge}</td>
-                        <td><span style="font-size:12.5px; color:var(--color-text-muted);">${entry.reason || '—'}</span></td>
-                        <td><span style="font-size:13px;">${entry.projectName || '—'}</span></td>
+                        <td><span style="font-size:12.5px; color:var(--color-text-muted);">${entry.reason || '&mdash;'}</span></td>
+                        <td><span style="font-size:13px;">${entry.projectName || '&mdash;'}</span></td>
                         <td>${assignedByCell}</td>
                         <td>${assignedToCell}</td>
-                        <td><span style="font-size:12px; color:var(--color-text-muted);">${entry.warehouseName || '—'}</span></td>
+                        <td><span style="font-size:12px; color:var(--color-text-muted);">${entry.warehouseName || '&mdash;'}</span></td>
                       </tr>
                     `;
                   }).join('')}
@@ -4449,11 +4715,172 @@
         `;
       }
 
-      // Re-trigger icon rendering
+      // 8. LEDGER VIEW
+      else if (state.currentView === 'ledger') {
+        const ledgerFilter = state.ledgerFilter || 'all';
+        const ledgerSearch = (document.getElementById('ledger-search')?.value || '').toLowerCase().trim();
+
+        // Get all deleted component names from history (those not in current catalog)
+        const activeSkus = new Set(state.components.map(c => c.sku));
+
+        const allEntries = (Array.isArray(state.stockHistory) ? [...state.stockHistory] : [])
+          .filter(h => {
+            if (!h) return false;
+            // Filter tab
+            if (ledgerFilter === 'stock-in')  return h.action === 'Stock In (PO)' || h.action === 'Added';
+            if (ledgerFilter === 'stock-out')  return h.action === 'Stock Out (Sale)' || h.action === 'Damaged/Scrap' || h.action === 'Loaned';
+            if (ledgerFilter === 'transfers')  return h.action === 'Transferred';
+            if (ledgerFilter === 'assigned')   return h.action === 'Assigned to Project' || h.action === 'Returned from Project';
+            if (ledgerFilter === 'removed')    return h.action === 'Removed' || (h.sku && !activeSkus.has(h.sku));
+            return true;
+          })
+          .filter(h => {
+            if (!ledgerSearch) return true;
+            return (h.componentName||'').toLowerCase().includes(ledgerSearch) ||
+                   (h.sku||'').toLowerCase().includes(ledgerSearch) ||
+                   (h.action||'').toLowerCase().includes(ledgerSearch) ||
+                   (h.reason||'').toLowerCase().includes(ledgerSearch) ||
+                   (h.projectName||'').toLowerCase().includes(ledgerSearch);
+          })
+          .sort((a, b) => (Number(b.sNo)||0) - (Number(a.sNo)||0));
+
+        // Summary calculations
+        const allHistory = Array.isArray(state.stockHistory) ? state.stockHistory : [];
+        const totalPurchased = allHistory.filter(h => h && (h.action === 'Stock In (PO)' || h.action === 'Added'))
+          .reduce((sum, h) => sum + (Number(h.totalPrice) || 0), 0);
+        const totalDispatched = allHistory.filter(h => h && (h.action === 'Stock Out (Sale)' || h.action === 'Removed'))
+          .reduce((sum, h) => sum + (Number(h.totalPrice) || 0), 0);
+        const netValue = totalPurchased - totalDispatched;
+
+        const tabStyle = (t) => `style="padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;${ledgerFilter===t ? 'background:var(--color-accent-purple);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.3);' : 'background:rgba(124,58,237,0.08);color:var(--color-accent-purple);'}" onclick="state.ledgerFilter='${t}';render()"`;
+
+        container.innerHTML = `
+          <div class="view-header">
+            <div class="view-title-wrap">
+              <h2>Financial Ledger</h2>
+              <div class="view-subtitle">Complete accounting trail &mdash; every stock movement with quantities, unit costs and total values.</div>
+            </div>
+            <button class="btn btn-secondary" onclick="exportLedgerCSV()">
+              <i data-lucide="download"></i> Export CSV
+            </button>
+          </div>
+
+          <!-- Summary Cards -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+            <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:14px;padding:20px;">
+              <div style="font-size:12px;font-weight:600;color:#15803d;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">Total Purchased</div>
+              <div style="font-size:24px;font-weight:800;color:#166534;">&#8377;${totalPurchased.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              <div style="font-size:12px;color:#4ade80;margin-top:4px;">All Stock In transactions</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;border-radius:14px;padding:20px;">
+              <div style="font-size:12px;font-weight:600;color:#dc2626;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">Total Dispatched</div>
+              <div style="font-size:24px;font-weight:800;color:#991b1b;">&#8377;${totalDispatched.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              <div style="font-size:12px;color:#f87171;margin-top:4px;">Stock Out &amp; Removed</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:14px;padding:20px;">
+              <div style="font-size:12px;font-weight:600;color:#1d4ed8;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">Net Inventory Value</div>
+              <div style="font-size:24px;font-weight:800;color:${netValue>=0?'#1e40af':'#991b1b'};">&#8377;${netValue.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              <div style="font-size:12px;color:#60a5fa;margin-top:4px;">Purchased &minus; Dispatched</div>
+            </div>
+          </div>
+
+          <div class="content-panel">
+            <!-- Filter Tabs + Search -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button ${tabStyle('all')}>All</button>
+                <button ${tabStyle('stock-in')}>&#8595; Stock In</button>
+                <button ${tabStyle('stock-out')}>&#8593; Stock Out</button>
+                <button ${tabStyle('assigned')}>&#8652; Assigned</button>
+                <button ${tabStyle('transfers')}>&#8644; Transfers</button>
+                <button ${tabStyle('removed')}>&#128683; Removed</button>
+              </div>
+              <div class="search-input-box" style="min-width:260px;">
+                <i data-lucide="search"></i>
+                <input type="text" id="ledger-search" placeholder="Search product, SKU, action..." value="${ledgerSearch}" oninput="render()">
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Product / SKU</th>
+                    <th>Action</th>
+                    <th style="text-align:center;">Qty</th>
+                    <th style="text-align:right;">Unit Price</th>
+                    <th style="text-align:right;">Total Value</th>
+                    <th>Reference / PO</th>
+                    <th>Project</th>
+                    <th style="text-align:center;">Edit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${allEntries.map(entry => {
+                    const isDeleted = entry.sku && !activeSkus.has(entry.sku) && entry.action !== 'Removed';
+                    const isIn  = entry.action === 'Stock In (PO)' || entry.action === 'Added';
+                    const isOut = entry.action === 'Stock Out (Sale)' || entry.action === 'Removed' || entry.action === 'Damaged/Scrap' || entry.action === 'Loaned';
+                    const isAssigned = entry.action === 'Assigned to Project';
+                    const isReturn   = entry.action === 'Returned from Project';
+                    const isTransfer = entry.action === 'Transferred';
+
+                    const rowBg = isIn ? 'rgba(5,150,105,0.04)' : isOut ? 'rgba(220,38,38,0.04)' : isAssigned ? 'rgba(37,99,235,0.04)' : isTransfer ? 'rgba(217,119,6,0.04)' : 'transparent';
+
+                    let badge = '';
+                    if (isIn)           badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="arrow-down-left" style="width:11px;"></i>Stock In</span>';
+                    else if (entry.action==='Added') badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="plus-circle" style="width:11px;"></i>Added</span>';
+                    else if (entry.action==='Stock Out (Sale)') badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="arrow-up-right" style="width:11px;"></i>Stock Out</span>';
+                    else if (entry.action==='Removed') badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="trash-2" style="width:11px;"></i>Removed</span>';
+                    else if (isAssigned) badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="send" style="width:11px;"></i>Assigned</span>';
+                    else if (isReturn)   badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="corner-down-left" style="width:11px;"></i>Returned</span>';
+                    else if (isTransfer) badge = '<span style="display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;"><i data-lucide="repeat" style="width:11px;"></i>Transfer</span>';
+                    else badge = `<span style="font-size:11px;color:var(--color-text-muted);">${entry.action}</span>`;
+
+                    const sign = isIn || isReturn ? '+' : isOut ? '-' : '';
+                    const signColor = isIn || isReturn ? '#15803d' : isOut ? '#dc2626' : '#2563eb';
+                    const unitPriceDisp = entry.unitPrice > 0 ? `&#8377;${Number(entry.unitPrice).toFixed(2)}` : '<span style="color:var(--color-text-muted);">&mdash;</span>';
+                    const totalDisp = entry.totalPrice > 0
+                      ? `<strong style="color:${isOut?'#dc2626':'#15803d'};">${isOut?'-':'+'}&#8377;${Number(entry.totalPrice).toFixed(2)}</strong>`
+                      : '<span style="color:var(--color-text-muted);">&mdash;</span>';
+
+                    const deletedBadge = (isDeleted || entry.action==='Removed')
+                      ? ' <span style="background:#fee2e2;color:#dc2626;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle;">DELETED</span>' : '';
+
+                    return `<tr style="background:${rowBg};">
+                      <td style="font-size:12px;color:var(--color-text-muted);">#${entry.sNo}</td>
+                      <td style="font-size:12px;color:var(--color-text-muted);white-space:nowrap;">${entry.date||''}</td>
+                      <td style="max-width:200px;">
+                        <div style="font-weight:600;font-size:13px;${isDeleted||entry.action==='Removed'?'text-decoration:line-through;color:var(--color-text-muted);':''}">${entry.componentName||''}${deletedBadge}</div>
+                        ${entry.sku ? `<span class="sku-pill" style="font-size:10px;">${entry.sku}</span>` : ''}
+                      </td>
+                      <td>${badge}</td>
+                      <td style="text-align:center;font-weight:700;color:${signColor};">${sign}${entry.qty}</td>
+                      <td style="text-align:right;font-size:13px;">${unitPriceDisp}</td>
+                      <td style="text-align:right;">${totalDisp}</td>
+                      <td style="font-size:12px;color:var(--color-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(entry.reason||'').replace(/"/g,'&quot;')}">${entry.reason||'&mdash;'}</td>
+                      <td style="font-size:12px;">${entry.projectName ? `<span style="background:rgba(37,99,235,0.08);color:#1d4ed8;padding:2px 8px;border-radius:10px;">${entry.projectName}</span>` : '<span style="color:var(--color-text-muted);">&mdash;</span>'}</td>
+                      <td style="text-align:center;">
+                        <button onclick="openEditLedgerEntry(${entry.sNo})" title="Edit this entry" style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);color:var(--color-accent-purple);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:12px;transition:all 0.15s;" onmouseover="this.style.background='rgba(124,58,237,0.18)'" onmouseout="this.style.background='rgba(124,58,237,0.08)'">
+                          <i data-lucide="pencil" style="width:12px;height:12px;"></i>
+                        </button>
+                      </td>
+                    </tr>`;
+                  }).join('')}
+                  ${allEntries.length === 0 ? `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--color-text-muted);">No transactions found${ledgerSearch ? ' matching "'+ledgerSearch+'"' : ledgerFilter!=='all' ? ' in this category' : ''}.</td></tr>` : ''}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+
       lucide.createIcons();
     }
 
-    // ── Add Existing Component to Project ─────────────────────────────────
+    // &acirc;&acirc; Add Existing Component to Project &acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;&acirc;
     let _addToProjectId = null;
 
     function openAddComponentToProject(projectId) {
@@ -4472,7 +4899,7 @@
       }
 
       select.innerHTML = available.map(c =>
-        `<option value="${c.id}" data-spare="${c.spareQty}" data-unit="${c.unit || 'pcs'}">${c.name} (${c.sku}) — Available: ${c.spareQty} ${c.unit || 'pcs'}</option>`
+        `<option value="${c.id}" data-spare="${c.spareQty}" data-unit="${c.unit || 'pcs'}">${c.name} (${c.sku}) &mdash; Available: ${c.spareQty} ${c.unit || 'pcs'}</option>`
       ).join('');
 
       // Show warning if component already in project
@@ -4508,7 +4935,7 @@
         const alreadyIn = proj && (proj.usedComponents || []).find(uc => uc.componentId === compId);
         if (alreadyIn) {
           warning.style.display = 'block';
-          warning.textContent = `⚠️ This component is already assigned to this project (${alreadyIn.qty} ${unit}). Adding more will increase the total.`;
+          warning.textContent = `⚠ This component is already assigned to this project (${alreadyIn.qty} ${unit}). Adding more will increase the total.`;
         } else {
           warning.style.display = 'none';
         }
@@ -4556,7 +4983,7 @@
 
       saveState();
       closeModal('add-to-project');
-      triggerToast(`✅ Assigned ${qty} × "${comp.name}" to ${proj.name}.`);
+      triggerToast(`✓ Assigned ${qty} x "${comp.name}" to ${proj.name}.`);
       render();
     }
 
